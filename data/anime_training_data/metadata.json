@@ -1,0 +1,24 @@
+{
+  "num_examples_total": 41379,
+  "num_train": 33103,
+  "num_val": 4138,
+  "num_test": 4138,
+  "num_titles_used": 3429,
+  "num_dataset_terms": 78,
+  "num_surface_terms": 150,
+  "labels": [
+    "O",
+    "B-LIKED_TITLE",
+    "I-LIKED_TITLE",
+    "B-POSITIVE_TERM",
+    "I-POSITIVE_TERM",
+    "B-NEGATIVE_TERM",
+    "I-NEGATIVE_TERM"
+  ],
+  "random_seed": 42,
+  "notes": [
+    "BIO token classification format.",
+    "positive_terms/negative_terms are surface phrases in the prompt.",
+    "canonical fields map synonyms back to dataset terms."
+  ]
+}
