@@ -103,7 +103,7 @@ class AnimePromptDataset(Dataset):
             "attention_mask": torch.tensor(attention_mask, dtype=torch.long),
             "labels": torch.tensor(label_ids, dtype=torch.long),
         }
-
+ 
 training_data = load_jsonl(training_path)
 vocab_dict = build_vocab(training_data)
 
