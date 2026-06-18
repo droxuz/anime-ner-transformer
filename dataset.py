@@ -54,6 +54,7 @@ def build_vocab(data, min_freq = 1):
 
     return word_to_id
 
+#
 class AnimePromptDataset(Dataset):
     def __init__(self, data, vocab_dict, max_len=40):
         self.data = data
@@ -95,7 +96,7 @@ class AnimePromptDataset(Dataset):
 
         # Padding for input_ids, label_ids
         input_ids = input_ids + [self.vocab_dict["<PAD>"]] * padding_length
-        label_ids = label_ids + [label_to_id[-100]] * padding_length
+        label_ids = label_ids + [-100] * padding_length
         
         # Tensors
         return {
@@ -106,6 +107,7 @@ class AnimePromptDataset(Dataset):
  
 training_data = load_jsonl(training_path)
 vocab_dict = build_vocab(training_data)
+#training_dataset = AnimePromptDataset(training_data, vocab_dict, max_len= 40)
 
 
 
@@ -114,7 +116,7 @@ vocab_dict = build_vocab(training_data)
 #print(training_data[0])
 #print(len(vocab_dict))
 #print(vocab_dict["action"])
-#print(vocab_dict["<PAD>"])
-#print(vocab_dict["<UNK>"])
+#print(vocab_dict[pad_token])
+#print(vocab_dict[unk_token])
 
 
