@@ -11,7 +11,7 @@ if torch.cuda.is_available():
 else:
     device = torch.device("cpu")
 
-training_path, testing_path, val_path, label_map_path, label_to_id = get_config()
+training_path, testing_path, val_path, label_map_path, save_path, label_to_id = get_config()
 
 training_data = load_jsonl(training_path)
 vocab_lib = build_vocab(training_data)

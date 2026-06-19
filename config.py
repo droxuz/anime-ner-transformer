@@ -4,6 +4,7 @@ def get_config():
     testing_path = "data/anime_training_data/test.jsonl"
     val_path = "data/anime_training_data/val.jsonl"
     label_map_path = "data/anime_training_data/label_map.json"
+    save_path = "data/anime_training_data/bpe_tokenizer.json"
 
 
     id_to_label = {
@@ -17,4 +18,4 @@ def get_config():
     }
 
     label_to_id = {value: key for key, value in id_to_label.items()}
-    return(training_path, testing_path, val_path, label_map_path, label_to_id)
+    return(training_path, testing_path, val_path, label_map_path, save_path, label_to_id)
