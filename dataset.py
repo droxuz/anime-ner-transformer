@@ -31,7 +31,7 @@ def load_jsonl(path):
 
 #Dataset
 class AnimePromptDataset(Dataset):
-    def __init__(self, data, vocab_dict, max_len=40):
+    def __init__(self, data, vocab_dict, max_len=100):
         self.data = data
         self.vocab_dict = vocab_dict
         self.max_len = max_len
@@ -87,10 +87,65 @@ class AnimeBPEDataset(Dataset):
         self.tokenizer = tokenizer
         self.label_to_id = label_to_id
         self.max_len = max_len
+        self.pad_id = tokenizer.token_to_id("<PAD>")
 
     def __len__(self):
-        return 
+        return len(self.data)
     
-    def __getitem__():
-        pass
+    def __getitem__(self, index):
+        row = self.data[index]
+        original_tokens = row["tokens"]
+        original_labels = row["labels"]
 
+        # Split pre tokens into subwords using the tokenizer
+        token_encoding = self.tokenizer.encode(original_tokens, is_pretokenized= True, add_special_tokens= False)
+        input_ids = token_encoding.ids
+        word_ids = token_encoding.word_ids
+
+        # Create new labels ids to new length of subwords
+        label_ids = []
+        previous_word_id = None
+
+        for word_id in word_ids:
+            # If word_id is not in BPE then assign -100 
+            if word_id is None:
+                label_ids.append(-100)
+                previous_word_id = word_id
+                continue
+
+            original_label = original_labels[word_id]
+
+            # Holds True if not subword False if part of subword, meaning a new label starting word
+            subword_check = word_id != previous_word_id
+            if original_label == "O":
+                new_label = "O"
+
+            elif subword_check:
+                new_label = original_label
+            
+            else:
+                # Find label type, from original label split by"-" returns a list of both sides of - then takes only right side
+                # Since in subword make prefix I- to denote inside
+                label_type = original_label.split("-",1)[1]
+                new_label = f"I-{label_type}"
+            
+            label_ids.append(self.label_to_id[new_label])
+            previous_word_id = word_id
+
+
+        #Create a attention mask from the new BPE prompt
+        attention_mask = [1] * len(input_ids)
+        padding_length = self.max_len - len(input_ids)
+        attention_mask = attention_mask + [0] * padding_length
+
+        #Create padding for input_ids, and label_ids
+        input_ids = input_ids + [self.pad_id] * padding_length
+        label_ids = label_ids + [-100] * padding_length
+
+
+        #Tensors
+        return {
+            "input_ids": torch.tensor(input_ids, dtype=torch.long),
+            "attention_mask": torch.tensor(attention_mask, dtype=torch.long),
+            "labels": torch.tensor(label_ids, dtype=torch.long),
+        }

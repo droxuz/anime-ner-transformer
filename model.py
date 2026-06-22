@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 
 class TinyTransformer(nn.Module):
-    def __init__(self, vocab_size, num_labels, max_len = 40, d_model = 128):
+    def __init__(self, vocab_size, num_labels, max_len = 100, d_model = 128):
         super().__init__()
         
         # define layers here
@@ -20,7 +20,7 @@ class TinyTransformer(nn.Module):
         token_embed = self.token_embeddings(input_ids)# Creates a token representation with 128 values
         position_id = torch.arange(columns,device= input_ids.device)
         position_id = position_id.unsqueeze(0).expand(rows, columns)
-        position_embed = self.position_embeddings(position_id)# Creates a 0-39 position representation using 128 Values
+        position_embed = self.position_embeddings(position_id)# Creates a 0 to max_len position representation using 128 Values
 
         #Combine the position and token embeds
         pos_tok_embedding = token_embed + position_embed

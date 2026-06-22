@@ -1,4 +1,5 @@
-from dataset import load_jsonl, build_vocab, AnimePromptDataset
+from dataset import load_jsonl, AnimePromptDataset, AnimeBPEDataset
+from bpe_tokenizer import train_bpe_tokenizer, get_bpe_tokenizer
 from model import TinyTransformer
 from config import get_config
 from torch.utils.data import DataLoader
@@ -14,16 +15,18 @@ else:
 training_path, testing_path, val_path, label_map_path, save_path, label_to_id = get_config()
 
 training_data = load_jsonl(training_path)
-vocab_lib = build_vocab(training_data)
 val_data = load_jsonl(val_path)
-
-
 testing_data = load_jsonl(testing_path)
 
+trained_bpe = get_bpe_tokenizer(training_data, save_path, vocab_size = 8000)
 
-training_dataset = AnimePromptDataset(training_data, vocab_lib, max_len= 40)
-testing_dataset = AnimePromptDataset(testing_data, vocab_lib, max_len= 40)
-val_dataset = AnimePromptDataset(val_data, vocab_lib, max_len=40)
+training_dataset = AnimeBPEDataset(training_data, tokenizer= trained_bpe, label_to_id= label_to_id, max_len = 100)
+testing_dataset = AnimeBPEDataset(testing_data, tokenizer= trained_bpe, label_to_id= label_to_id, max_len= 100)
+val_dataset = AnimeBPEDataset(val_data, tokenizer= trained_bpe, label_to_id= label_to_id, max_len= 100)
+
+#training_dataset = AnimePromptDataset(training_data, vocab_lib, max_len= 40)
+#testing_dataset = AnimePromptDataset(testing_data, vocab_lib, max_len= 40)
+#val_dataset = AnimePromptDataset(val_data, vocab_lib, max_len=40)
 #print(x) #Rows of the entire dataset
 #print(testing) #3 Tensors for inputID, attentionMask, labels
 
@@ -31,7 +34,8 @@ training_dataloader = DataLoader(training_dataset, batch_size=64, shuffle=True)
 testing_dataloader = DataLoader(testing_dataset, batch_size=64, shuffle=True)
 val_dataloader = DataLoader(val_dataset, batch_size=64, shuffle=False)
 
-tiny_model = TinyTransformer(vocab_size= len(vocab_lib), num_labels= len(label_to_id), max_len= 40).to(device)
+torch.manual_seed(321)
+tiny_model = TinyTransformer(vocab_size= trained_bpe.get_vocab_size(), num_labels= len(label_to_id), max_len= 100).to(device)
 
 cross_entropy_loss = nn.CrossEntropyLoss(ignore_index=-100)
 optimizer = torch.optim.AdamW(tiny_model.parameters(), lr=1e-4)
@@ -39,26 +43,11 @@ num_epochs = 20
 train_losses = []
 val_losses = []
 
-def unk_rate(data, vocab):
-    total = 0
-    unk = 0
-
-    for row in data:
-        for token in row["tokens"]:
-            total += 1
-            if token.lower() not in vocab:
-                unk += 1
-
-    return unk / total
-
-print("Train UNK rate:", unk_rate(training_data, vocab_lib))
-print("Val UNK rate:", unk_rate(val_data, vocab_lib))
-print("Test UNK rate:", unk_rate(testing_data, vocab_lib))
-
 for epoch in range(num_epochs):
     
     tiny_model.train()
     total_loss = 0
+    
 
     for batch in training_dataloader:
         #Pulls tensors from batch
@@ -96,6 +85,9 @@ for epoch in range(num_epochs):
     train_losses.append(avg_loss)
     val_losses.append(avg_val_loss)
     print(f"Epoch {epoch + 1}/{num_epochs} | " f"Train loss: {avg_loss:.4f} | " f"Val loss: {avg_val_loss:.4f}")
+
+    #Val Loss reduce overfitting. 
+    
 
 plt.plot(train_losses, label="Training Losses")
 plt.plot(val_losses, label="Validation Losses")
