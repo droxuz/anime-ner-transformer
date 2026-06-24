@@ -8,7 +8,7 @@ class TinyTransformer(nn.Module):
         # define layers here
         self.token_embeddings = torch.nn.Embedding(vocab_size, d_model)# Creates lookup for tokens
         self.position_embeddings = torch.nn.Embedding(max_len, d_model)# Creates Lookup for positional
-        encoder_layer = nn.TransformerEncoderLayer(d_model= d_model, nhead= 8, dim_feedforward= 256, dropout= 0.1, batch_first= True)# Singular encoder layer
+        encoder_layer = nn.TransformerEncoderLayer(d_model= d_model, nhead= 8, dim_feedforward= 256, dropout= 0.2, batch_first= True)# Singular encoder layer
         self.encoder = nn.TransformerEncoder(encoder_layer, num_layers= 2)# Creates a encoder of 2 encoding layers
         self.classifier = nn.Linear(d_model, num_labels)# Classifier to use with the labels from data
 

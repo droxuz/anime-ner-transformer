@@ -1,5 +1,5 @@
-from dataset import load_jsonl, AnimePromptDataset, AnimeBPEDataset
-from bpe_tokenizer import train_bpe_tokenizer, get_bpe_tokenizer
+from dataset import load_jsonl, AnimeBPEDataset
+from bpe_tokenizer import get_bpe_tokenizer
 from model import TinyTransformer
 from config import get_config
 from torch.utils.data import DataLoader
@@ -39,56 +39,99 @@ tiny_model = TinyTransformer(vocab_size= trained_bpe.get_vocab_size(), num_label
 
 cross_entropy_loss = nn.CrossEntropyLoss(ignore_index=-100)
 optimizer = torch.optim.AdamW(tiny_model.parameters(), lr=1e-4)
-num_epochs = 20
-train_losses = []
-val_losses = []
 
-for epoch in range(num_epochs):
-    
-    tiny_model.train()
-    total_loss = 0
-    
+def train_model(model, training_dataloader, val_dataloader, optimizer, loss_function, device, num_epochs=10, patience=3, save_path="best_model.pth"):
+    best_val_loss = float("inf")
+    no_improvement = 0
 
-    for batch in training_dataloader:
-        #Pulls tensors from batch
-        input_ids = batch["input_ids"].to(device)
-        attention_mask = batch["attention_mask"].to(device)
-        labels = batch["labels"].to(device)
+    train_losses = []
+    val_losses = []
 
-        optimizer.zero_grad()
+    for epoch in range(num_epochs):
+        # Training
+        model.train()
+        total_train_loss = 0.0
 
-        logits = tiny_model(input_ids, attention_mask)
-        loss = cross_entropy_loss(logits.reshape(-1, len(label_to_id)), labels.reshape(-1)) # per logit token create a 7 element mapping to each label, compare with the labels for loss
-
-        loss.backward() # Backprop
-        optimizer.step() # Updates weights
-
-        total_loss += loss.item()
-    
-    avg_loss = total_loss / len(training_dataloader)
-    # Validation
-    tiny_model.eval()
-    val_loss = 0
-
-    with torch.no_grad():
-        for batch in val_dataloader:
+        for batch in training_dataloader:
             input_ids = batch["input_ids"].to(device)
             attention_mask = batch["attention_mask"].to(device)
             labels = batch["labels"].to(device)
 
-            logits = tiny_model(input_ids, attention_mask)
+            optimizer.zero_grad()
 
-            loss = cross_entropy_loss(logits.reshape(-1, len(label_to_id)), labels.reshape(-1))
+            logits = model(input_ids, attention_mask)
 
-            val_loss += loss.item()
-    avg_val_loss = val_loss / len(val_dataloader)
-    train_losses.append(avg_loss)
-    val_losses.append(avg_val_loss)
-    print(f"Epoch {epoch + 1}/{num_epochs} | " f"Train loss: {avg_loss:.4f} | " f"Val loss: {avg_val_loss:.4f}")
+            loss = loss_function(
+                logits.reshape(-1, logits.shape[-1]),
+                labels.reshape(-1)
+            )
 
-    #Val Loss reduce overfitting. 
+            loss.backward()
+            optimizer.step()
+
+            total_train_loss += loss.item()
+
+        avg_train_loss = (
+            total_train_loss / len(training_dataloader)
+        )
+
+        # Validation
+        model.eval()
+        total_val_loss = 0.0
+
+        with torch.no_grad():
+            for batch in val_dataloader:
+                input_ids = batch["input_ids"].to(device)
+                attention_mask = batch["attention_mask"].to(device)
+                labels = batch["labels"].to(device)
+
+                logits = model(input_ids, attention_mask)
+
+                loss = loss_function(
+                    logits.reshape(-1, logits.shape[-1]),
+                    labels.reshape(-1)
+                )
+
+                total_val_loss += loss.item()
+
+        avg_val_loss = total_val_loss / len(val_dataloader)
+
+        train_losses.append(avg_train_loss)
+        val_losses.append(avg_val_loss)
+
+        print(
+            f"Epoch {epoch + 1}/{num_epochs} | "
+            f"Train loss: {avg_train_loss:.4f} | "
+            f"Val loss: {avg_val_loss:.4f}"
+        )
+
+        if avg_val_loss < best_val_loss:
+            best_val_loss = avg_val_loss
+            no_improvement = 0
+
+            torch.save(model.state_dict(), save_path)
+            print("Saved best model")
+        else:
+            no_improvement += 1
+
+            if no_improvement >= patience:
+                print("Early stopping")
+                break
+
+    # Reload the best checkpoint, not the final epoch
+    model.load_state_dict(
+        torch.load(
+            save_path,
+            map_location=device,
+            weights_only=True
+        )
+    )
+
+    model.eval()
+
+    return model, train_losses, val_losses
     
-
+tiny_model, train_losses, val_losses = train_model(model=tiny_model, training_dataloader=training_dataloader, val_dataloader=val_dataloader, optimizer=optimizer, loss_function=cross_entropy_loss, device=device, num_epochs=10, patience=3, save_path="best_model.pth")
 plt.plot(train_losses, label="Training Losses")
 plt.plot(val_losses, label="Validation Losses")
 plt.xlabel("Epoch")
