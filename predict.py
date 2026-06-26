@@ -3,34 +3,71 @@ import re
 from model import TinyTransformer
 from bpe_tokenizer import load_bpe_tokenizer
 from config import get_config
+from gazetteer import AnimeGazetteer
 
 MAX_LEN = 100
 TOKEN_PATTERN = re.compile(r"[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*|'[A-Za-z]+|[^\w\s]")
+
+def apply_gazetteer_labels(
+    predicted_ids,
+    word_ids,
+    gazetteer_word_labels,
+    id_to_label
+):
+    final_labels = []
+    seen_word_ids = set()
+
+    for word_id, predicted_id in zip(
+        word_ids,
+        predicted_ids
+    ):
+        model_label = id_to_label[predicted_id]
+
+        if word_id is None:
+            final_labels.append(model_label)
+            continue
+
+        gazetteer_label = gazetteer_word_labels[word_id]
+        first_bpe_piece = word_id not in seen_word_ids
+
+        seen_word_ids.add(word_id)
+
+        # No gazetteer title at this word:
+        # retain the model prediction.
+        if gazetteer_label == "O":
+            final_labels.append(model_label)
+
+        # First word of a gazetteer title.
+        elif gazetteer_label == "B-TITLE":
+            if first_bpe_piece:
+                final_labels.append("B-TITLE")
+            else:
+                final_labels.append("I-TITLE")
+
+        # Continuation word of a gazetteer title.
+        else:
+            final_labels.append("I-TITLE")
+
+    return final_labels
 
 def convert_to_word_predictions(
     words,
     word_ids,
     predicted_ids,
-    id_to_label
+    
 ):
     predictions = []
     seen_word_ids = set()
 
-    for word_id, predicted_id in zip(word_ids, predicted_ids):
+    for word_id, label in zip(word_ids, predicted_ids):
+
         if word_id is None or word_id in seen_word_ids:
             continue
 
         seen_word_ids.add(word_id)
 
-        word = words[word_id]
-        label = id_to_label[predicted_id]
-
-        # Punctuation should not become an entity.
-        if re.fullmatch(r"[^\w\s]+", word):
-            label = "O"
-
         predictions.append({
-            "word": word,
+            "word": words[word_id],
             "label": label
         })
 
@@ -64,9 +101,10 @@ def load_trained_model(
 def tokenize_prompt(prompt):
     return TOKEN_PATTERN.findall(prompt)
 
-def predict_tags(prompt, model, tokenizer, id_to_label, device, max_len=100):
+def predict_tags(prompt, model, tokenizer, gazetteer, id_to_label, device, max_len=100):
     # Use the same word-tokenization method used when creating the JSONL data.
     words = tokenize_prompt(prompt)
+    gazetteer_word_labels, gazetteer_matches = (gazetteer.label_tokens(words))
 
     encoding = tokenizer.encode(words, is_pretokenized=True, add_special_tokens=False)
 
@@ -112,10 +150,9 @@ def predict_tags(prompt, model, tokenizer, id_to_label, device, max_len=100):
         words=words,
         word_ids=word_ids,
         predicted_ids=predicted_ids,
-        id_to_label=id_to_label
         )
 
-    return predictions, word_predictions
+    return predictions, word_predictions, gazetteer_matches
     
 
 
@@ -130,7 +167,7 @@ def main():
         label_id: label
         for label, label_id in label_to_id.items()
     }
-
+    gazetteer = AnimeGazetteer("data/anime_training_data/title_gazetteer.json")
     tokenizer = load_bpe_tokenizer(tokenizer_path)
 
     model = load_trained_model(
@@ -143,10 +180,11 @@ def main():
     prompt = input("Enter your prompt: \n")
 
 
-    predictions, word_predictions = predict_tags(
+    predictions, word_predictions, gazetteer_matches = predict_tags(
         prompt=prompt,
         model=model,
         tokenizer=tokenizer,
+        gazetteer=gazetteer,
         id_to_label=id_to_label,
         device=device,
         max_len=MAX_LEN

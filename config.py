@@ -9,8 +9,8 @@ def get_config():
 
     id_to_label = {
         0: 'O', 
-        1: 'B-LIKED_TITLE', 
-        2: 'I-LIKED_TITLE', 
+        1: 'B-TITLE', 
+        2: 'I-TITLE', 
         3: 'B-POSITIVE_TERM', 
         4: 'I-POSITIVE_TERM', 
         5: 'B-NEGATIVE_TERM', 

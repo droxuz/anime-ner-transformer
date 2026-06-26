@@ -24,12 +24,6 @@ training_dataset = AnimeBPEDataset(training_data, tokenizer= trained_bpe, label_
 testing_dataset = AnimeBPEDataset(testing_data, tokenizer= trained_bpe, label_to_id= label_to_id, max_len= 100)
 val_dataset = AnimeBPEDataset(val_data, tokenizer= trained_bpe, label_to_id= label_to_id, max_len= 100)
 
-#training_dataset = AnimePromptDataset(training_data, vocab_lib, max_len= 40)
-#testing_dataset = AnimePromptDataset(testing_data, vocab_lib, max_len= 40)
-#val_dataset = AnimePromptDataset(val_data, vocab_lib, max_len=40)
-#print(x) #Rows of the entire dataset
-#print(testing) #3 Tensors for inputID, attentionMask, labels
-
 training_dataloader = DataLoader(training_dataset, batch_size=64, shuffle=True)
 testing_dataloader = DataLoader(testing_dataset, batch_size=64, shuffle=True)
 val_dataloader = DataLoader(val_dataset, batch_size=64, shuffle=False)

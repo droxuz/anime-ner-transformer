@@ -388,14 +388,7 @@ def main():
     parser.add_argument("--seed", type=int, default=321)
     args = parser.parse_args()
 
-    (
-        training_path,
-        testing_path,
-        val_path,
-        _label_map_path,
-        tokenizer_path,
-        label_to_id,
-    ) = load_project_config()
+    training_path, testing_path, val_path, label_map_path, tokenizer_path, label_to_id = get_config()
 
     required = [training_path, testing_path, val_path, tokenizer_path]
     missing = [str(path) for path in required if not path.exists()]
