@@ -6,6 +6,7 @@ from torch.utils.data import DataLoader
 import torch.nn as nn
 import torch
 import matplotlib.pyplot as plt
+import json
 
 if torch.cuda.is_available():
     device = torch.device("cuda")
@@ -18,7 +19,7 @@ training_data = load_jsonl(training_path)
 val_data = load_jsonl(val_path)
 testing_data = load_jsonl(testing_path)
 
-trained_bpe = get_bpe_tokenizer(training_data, save_path, vocab_size = 8000)
+trained_bpe = get_bpe_tokenizer(training_data, save_path, vocab_size=8000, force_retrain=True)
 
 training_dataset = AnimeBPEDataset(training_data, tokenizer= trained_bpe, label_to_id= label_to_id, max_len = 100)
 testing_dataset = AnimeBPEDataset(testing_data, tokenizer= trained_bpe, label_to_id= label_to_id, max_len= 100)
@@ -104,6 +105,18 @@ def train_model(model, training_dataloader, val_dataloader, optimizer, loss_func
             no_improvement = 0
 
             torch.save(model.state_dict(), save_path)
+            with open(f"{save_path}.meta.json", "w", encoding="utf-8") as file:
+                json.dump(
+                    {
+                        "label_to_id": label_to_id,
+                        "id_to_label": {
+                            str(label_id): label
+                            for label, label_id in label_to_id.items()
+                        },
+                    },
+                    file,
+                    indent=2,
+                )
             print("Saved best model")
         else:
             no_improvement += 1

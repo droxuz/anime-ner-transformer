@@ -8,13 +8,13 @@ def get_config():
 
 
     id_to_label = {
-        0: 'O', 
-        1: 'B-TITLE', 
-        2: 'I-TITLE', 
-        3: 'B-POSITIVE_TERM', 
-        4: 'I-POSITIVE_TERM', 
-        5: 'B-NEGATIVE_TERM', 
-        6: 'I-NEGATIVE_TERM'
+        0: 'O',
+        1: 'B-TITLE',
+        2: 'I-TITLE',
+        3: 'B-GENRE',
+        4: 'I-GENRE',
+        5: 'B-THEME',
+        6: 'I-THEME',
     }
 
     label_to_id = {value: key for key, value in id_to_label.items()}

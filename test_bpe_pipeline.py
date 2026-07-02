@@ -303,11 +303,11 @@ def extract_liked_titles(row):
     current = []
 
     for token, label in zip(row["tokens"], row["labels"]):
-        if label == "B-LIKED_TITLE":
+        if label == "B-TITLE":
             if current:
                 titles.append(normalize_text(" ".join(current)))
             current = [token]
-        elif label == "I-LIKED_TITLE" and current:
+        elif label == "I-TITLE" and current:
             current.append(token)
         else:
             if current:
@@ -495,41 +495,33 @@ def main():
             for title in unseen:
                 print(f"    {title}")
 
-    print("\n=== 8. CANONICAL TERM EXPOSURE ===")
-    train_positive = set(
-        canonical_terms(training_data, ("positive_canonical", "positive_terms"))
-    )
-    train_negative = set(
-        canonical_terms(training_data, ("negative_canonical", "negative_terms"))
-    )
+    print("\n=== 8. GENRE/THEME TERM EXPOSURE ===")
+    train_genres = set(canonical_terms(training_data, ("genre_terms",)))
+    train_themes = set(canonical_terms(training_data, ("theme_terms",)))
 
     for name, data in (("Validation", val_data), ("Test", testing_data)):
-        target_positive = canonical_terms(
-            data, ("positive_canonical", "positive_terms")
-        )
-        target_negative = canonical_terms(
-            data, ("negative_canonical", "negative_terms")
-        )
+        target_genres = canonical_terms(data, ("genre_terms",))
+        target_themes = canonical_terms(data, ("theme_terms",))
 
-        pos_seen, pos_total, pos_rate, pos_unseen = exposure_rate(
-            train_positive, target_positive
+        genre_seen, genre_total, genre_rate, genre_unseen = exposure_rate(
+            train_genres, target_genres
         )
-        neg_seen, neg_total, neg_rate, neg_unseen = exposure_rate(
-            train_negative, target_negative
+        theme_seen, theme_total, theme_rate, theme_unseen = exposure_rate(
+            train_themes, target_themes
         )
 
         print(
-            f"Train -> {name} positive terms: {pos_seen:,}/{pos_total:,} "
-            f"({100 * pos_rate:.2f}%)"
+            f"Train -> {name} genres: {genre_seen:,}/{genre_total:,} "
+            f"({100 * genre_rate:.2f}%)"
         )
         print(
-            f"Train -> {name} negative terms: {neg_seen:,}/{neg_total:,} "
-            f"({100 * neg_rate:.2f}%)"
+            f"Train -> {name} themes: {theme_seen:,}/{theme_total:,} "
+            f"({100 * theme_rate:.2f}%)"
         )
-        if pos_unseen:
-            print(f"  Sample unseen positive terms: {pos_unseen[:10]}")
-        if neg_unseen:
-            print(f"  Sample unseen negative terms: {neg_unseen[:10]}")
+        if genre_unseen:
+            print(f"  Sample unseen genres: {genre_unseen[:10]}")
+        if theme_unseen:
+            print(f"  Sample unseen themes: {theme_unseen[:10]}")
 
     print("\n=== FINAL RESULT ===")
     if critical_errors:

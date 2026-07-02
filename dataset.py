@@ -48,8 +48,8 @@ class AnimeBPEDataset(Dataset):
 
         # Split pre tokens into subwords using the tokenizer
         token_encoding = self.tokenizer.encode(original_tokens, is_pretokenized= True, add_special_tokens= False)
-        input_ids = token_encoding.ids
-        word_ids = token_encoding.word_ids
+        input_ids = token_encoding.ids[:self.max_len]
+        word_ids = token_encoding.word_ids[:self.max_len]
 
         # Create new labels ids to new length of subwords
         label_ids = []
