@@ -10,7 +10,7 @@ TOKEN_PATTERN = re.compile(r"[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*|'[A-Za-z]+|[^\w\s]")
 
 # Potential Solution to predictions large title spans, partition the text and plug each partition into prediction
 def define_partitions(prompt):
-    sentences = re.split(r'(?<=[,.!?;])\s', prompt)
+    sentences = re.split(r'(?<=[.!?;])\s', prompt)
     return [s.strip() for s in sentences if s.strip()]
 
 def convert_to_word_predictions(words, word_ids, predicted_ids):
@@ -144,9 +144,25 @@ def main():
 
     predictions, word_predictions = predict_tags(prompt, model, tokenizer, id_to_label, device, max_len=MAX_LEN)
 
-    partition_predictions, partition_word_predictions = predict_partition_tags(prompt, model, tokenizer, id_to_label, device, max_len=MAX_LEN)
-    partitions = define_partitions(prompt)
-    print(partitions)
+    if len(tokenize_prompt(prompt)) > 50:
+        partition_predictions, partition_word_predictions = predict_partition_tags(prompt, model, tokenizer, id_to_label, device, max_len=MAX_LEN)
+        partitions = define_partitions(prompt)
+        print(partitions)
+        for prediction in partition_predictions:
+            print(
+                f"partition\n"
+                f"{prediction['bpe_token']!r:18} "
+                f"{prediction['word']:18} "
+                f"{prediction['label']}"
+            )
+        print("\nWord-level predictions:\n")
+
+        for prediction in partition_word_predictions:
+            print(
+                f"{prediction['word']:18} "
+                f"{prediction['label']}"
+            )
+            
     for prediction in predictions:
         print(
             f"normal\n"
@@ -154,6 +170,7 @@ def main():
             f"{prediction['word']:18} "
             f"{prediction['label']}"
         )
+
     print("\nWord-level predictions:\n")
 
     for prediction in word_predictions:
@@ -162,20 +179,7 @@ def main():
             f"{prediction['label']}"
         )
 
-    for prediction in partition_predictions:
-        print(
-            f"partition\n"
-            f"{prediction['bpe_token']!r:18} "
-            f"{prediction['word']:18} "
-            f"{prediction['label']}"
-        )
-    print("\nWord-level predictions:\n")
-
-    for prediction in partition_word_predictions:
-        print(
-            f"{prediction['word']:18} "
-            f"{prediction['label']}"
-        )
+    
 
 
 if __name__ == "__main__":

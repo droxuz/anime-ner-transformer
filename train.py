@@ -31,10 +31,15 @@ val_dataloader = DataLoader(val_dataset, batch_size=64, shuffle=False)
 torch.manual_seed(321)
 tiny_model = TinyTransformer(vocab_size= trained_bpe.get_vocab_size(), num_labels= len(label_to_id), max_len= 100).to(device)
 
-cross_entropy_loss = nn.CrossEntropyLoss(ignore_index=-100)
+cross_entropy_weight = torch.tensor([
+        0.5, 2, 1.5, 2, 1.5, 2, 1.5
+    ], dtype = torch.float).to(device)
+
+cross_entropy_loss = nn.CrossEntropyLoss(weight= cross_entropy_weight, ignore_index=-100)
 optimizer = torch.optim.AdamW(tiny_model.parameters(), lr=1e-4)
 
-def train_model(model, training_dataloader, val_dataloader, optimizer, loss_function, device, num_epochs=10, patience=3, save_path="best_model.pth"):
+
+def train_model(model, training_dataloader, val_dataloader, optimizer, loss_function, device, num_epochs, patience=3, save_path="best_model.pth"):
     best_val_loss = float("inf")
     no_improvement = 0
 
@@ -87,12 +92,11 @@ def train_model(model, training_dataloader, val_dataloader, optimizer, loss_func
                 )
 
                 total_val_loss += loss.item()
-
+        
         avg_val_loss = total_val_loss / len(val_dataloader)
 
         train_losses.append(avg_train_loss)
         val_losses.append(avg_val_loss)
-
         print(
             f"Epoch {epoch + 1}/{num_epochs} | "
             f"Train loss: {avg_train_loss:.4f} | "
@@ -125,7 +129,8 @@ def train_model(model, training_dataloader, val_dataloader, optimizer, loss_func
 
     return model, train_losses, val_losses
     
-tiny_model, train_losses, val_losses = train_model(model=tiny_model, training_dataloader=training_dataloader, val_dataloader=val_dataloader, optimizer=optimizer, loss_function=cross_entropy_loss, device=device, num_epochs=10, patience=3, save_path="best_model.pth")
+num_epochs = 10
+tiny_model, train_losses, val_losses = train_model(model=tiny_model, training_dataloader=training_dataloader, val_dataloader=val_dataloader, optimizer=optimizer, loss_function=cross_entropy_loss, device=device, num_epochs=num_epochs, patience=3, save_path="best_model.pth")
 plt.plot(train_losses, label="Training Losses")
 plt.plot(val_losses, label="Validation Losses")
 plt.xlabel("Epoch")
