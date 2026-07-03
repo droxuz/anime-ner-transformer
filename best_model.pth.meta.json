@@ -1,0 +1,20 @@
+{
+  "label_to_id": {
+    "O": 0,
+    "B-TITLE": 1,
+    "I-TITLE": 2,
+    "B-GENRE": 3,
+    "I-GENRE": 4,
+    "B-THEME": 5,
+    "I-THEME": 6
+  },
+  "id_to_label": {
+    "0": "O",
+    "1": "B-TITLE",
+    "2": "I-TITLE",
+    "3": "B-GENRE",
+    "4": "I-GENRE",
+    "5": "B-THEME",
+    "6": "I-THEME"
+  }
+}

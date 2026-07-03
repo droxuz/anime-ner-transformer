@@ -15,6 +15,11 @@ else:
 
 training_path, testing_path, val_path, label_map_path, save_path, label_to_id = get_config()
 
+# sets a Custom weight because NER tasks typically have imbalanced tags of O > B-TITLE, etc.
+custom_weights = torch.ones(len(label_to_id), dtype= torch.float, device=device)
+custom_weights[label_to_id["O"]] = 1.3
+custom_weights[label_to_id["B-TITLE"]] = 0.8
+custom_weights[label_to_id["I-TITLE"]] = 0.8
 training_data = load_jsonl(training_path)
 val_data = load_jsonl(val_path)
 testing_data = load_jsonl(testing_path)
@@ -32,7 +37,7 @@ val_dataloader = DataLoader(val_dataset, batch_size=64, shuffle=False)
 torch.manual_seed(321)
 tiny_model = TinyTransformer(vocab_size= trained_bpe.get_vocab_size(), num_labels= len(label_to_id), max_len= 100).to(device)
 
-cross_entropy_loss = nn.CrossEntropyLoss(ignore_index=-100)
+cross_entropy_loss = nn.CrossEntropyLoss(weight= custom_weights, ignore_index=-100)
 optimizer = torch.optim.AdamW(tiny_model.parameters(), lr=1e-4)
 
 def train_model(model, training_dataloader, val_dataloader, optimizer, loss_function, device, num_epochs=10, patience=3, save_path="best_model.pth"):
@@ -82,10 +87,7 @@ def train_model(model, training_dataloader, val_dataloader, optimizer, loss_func
 
                 logits = model(input_ids, attention_mask)
 
-                loss = loss_function(
-                    logits.reshape(-1, logits.shape[-1]),
-                    labels.reshape(-1)
-                )
+                loss = loss_function(logits.reshape(-1, logits.shape[-1]), labels.reshape(-1))
 
                 total_val_loss += loss.item()
 

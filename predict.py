@@ -189,7 +189,7 @@ def predict_tags(prompt, model, tokenizer, id_to_label, device, max_len=100, gaz
 
     pad_id = tokenizer.token_to_id("<PAD>")
     padding_length = max_len - real_length
-
+    
     padded_input_ids = (input_ids + [pad_id] * padding_length)
     attention_mask = ([1] * real_length + [0] * padding_length)
 

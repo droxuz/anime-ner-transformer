@@ -17,8 +17,8 @@ def train_bpe_tokenizer(data, save_path, vocab_size = 8000):
 
     tokenizer = Tokenizer(BPE(unk_token="<UNK>"))
 
-    # Normalize data, Pre-tokenize, 
-    tokenizer.normalizer = Sequence([NFKC(),Lowercase()])
+    # Normalize data, Pre-tokenize Keep the Capitalization for similar to BERT case
+    # tokenizer.normalizer = Sequence([NFKC(),Lowercase()])
     tokenizer.pre_tokenizer = ByteLevel(add_prefix_space=True)
     tokenizer.decoder = ByteLevelDecoder()
 
