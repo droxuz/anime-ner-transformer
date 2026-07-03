@@ -48,10 +48,10 @@ class AnimeBPEDataset(Dataset):
 
         # Split pre tokens into subwords using the tokenizer
         token_encoding = self.tokenizer.encode(original_tokens, is_pretokenized= True, add_special_tokens= False)
-        input_ids = token_encoding.ids
-        word_ids = token_encoding.word_ids
+        input_ids = token_encoding.ids[:self.max_len]
+        word_ids = token_encoding.word_ids[:self.max_len]
 
-        # Create new labels ids to new length of subwords
+        # Assignment of label to id using the dict on the BPE subword
         label_ids = []
         previous_word_id = None
 
@@ -59,26 +59,13 @@ class AnimeBPEDataset(Dataset):
             # If word_id is not in BPE then assign -100 
             if word_id is None:
                 label_ids.append(-100)
-                previous_word_id = word_id
-                continue
-
-            original_label = original_labels[word_id]
-
-            # Holds True if not subword False if part of subword, meaning a new label starting word
-            subword_check = word_id != previous_word_id
-            if original_label == "O":
-                new_label = "O"
-
-            elif subword_check:
-                new_label = original_label
-            
+            # Assignment only for beginning of word transition from tag and prefix of subword BPE
+            elif word_id != previous_word_id:
+                original_label = original_labels[word_id]
+                label_ids.append(self.label_to_id[original_label])
             else:
-                # Find label type, from original label split by"-" returns a list of both sides of - then takes only right side
-                # Since in subword make prefix I- to denote inside
-                label_type = original_label.split("-",1)[1]
-                new_label = f"I-{label_type}"
-            
-            label_ids.append(self.label_to_id[new_label])
+                label_ids.append(-100)
+                
             previous_word_id = word_id
 
 

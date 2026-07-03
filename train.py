@@ -6,6 +6,7 @@ from torch.utils.data import DataLoader
 import torch.nn as nn
 import torch
 import matplotlib.pyplot as plt
+import json
 
 if torch.cuda.is_available():
     device = torch.device("cuda")
@@ -14,11 +15,16 @@ else:
 
 training_path, testing_path, val_path, label_map_path, save_path, label_to_id = get_config()
 
+# sets a Custom weight because NER tasks typically have imbalanced tags of O > B-TITLE, etc.
+custom_weights = torch.ones(len(label_to_id), dtype= torch.float, device=device)
+custom_weights[label_to_id["O"]] = 1.3
+custom_weights[label_to_id["B-TITLE"]] = 0.8
+custom_weights[label_to_id["I-TITLE"]] = 0.8
 training_data = load_jsonl(training_path)
 val_data = load_jsonl(val_path)
 testing_data = load_jsonl(testing_path)
 
-trained_bpe = get_bpe_tokenizer(training_data, save_path, vocab_size = 8000)
+trained_bpe = get_bpe_tokenizer(training_data, save_path, vocab_size=8000, force_retrain=True)
 
 training_dataset = AnimeBPEDataset(training_data, tokenizer= trained_bpe, label_to_id= label_to_id, max_len = 100)
 testing_dataset = AnimeBPEDataset(testing_data, tokenizer= trained_bpe, label_to_id= label_to_id, max_len= 100)
@@ -31,15 +37,10 @@ val_dataloader = DataLoader(val_dataset, batch_size=64, shuffle=False)
 torch.manual_seed(321)
 tiny_model = TinyTransformer(vocab_size= trained_bpe.get_vocab_size(), num_labels= len(label_to_id), max_len= 100).to(device)
 
-cross_entropy_weight = torch.tensor([
-        0.5, 2, 1.5, 2, 1.5, 2, 1.5
-    ], dtype = torch.float).to(device)
-
-cross_entropy_loss = nn.CrossEntropyLoss(weight= cross_entropy_weight, ignore_index=-100)
+cross_entropy_loss = nn.CrossEntropyLoss(weight= custom_weights, ignore_index=-100)
 optimizer = torch.optim.AdamW(tiny_model.parameters(), lr=1e-4)
 
-
-def train_model(model, training_dataloader, val_dataloader, optimizer, loss_function, device, num_epochs, patience=3, save_path="best_model.pth"):
+def train_model(model, training_dataloader, val_dataloader, optimizer, loss_function, device, num_epochs=10, patience=3, save_path="best_model.pth"):
     best_val_loss = float("inf")
     no_improvement = 0
 
@@ -86,17 +87,15 @@ def train_model(model, training_dataloader, val_dataloader, optimizer, loss_func
 
                 logits = model(input_ids, attention_mask)
 
-                loss = loss_function(
-                    logits.reshape(-1, logits.shape[-1]),
-                    labels.reshape(-1)
-                )
+                loss = loss_function(logits.reshape(-1, logits.shape[-1]), labels.reshape(-1))
 
                 total_val_loss += loss.item()
-        
+
         avg_val_loss = total_val_loss / len(val_dataloader)
 
         train_losses.append(avg_train_loss)
         val_losses.append(avg_val_loss)
+
         print(
             f"Epoch {epoch + 1}/{num_epochs} | "
             f"Train loss: {avg_train_loss:.4f} | "
@@ -108,6 +107,18 @@ def train_model(model, training_dataloader, val_dataloader, optimizer, loss_func
             no_improvement = 0
 
             torch.save(model.state_dict(), save_path)
+            with open(f"{save_path}.meta.json", "w", encoding="utf-8") as file:
+                json.dump(
+                    {
+                        "label_to_id": label_to_id,
+                        "id_to_label": {
+                            str(label_id): label
+                            for label, label_id in label_to_id.items()
+                        },
+                    },
+                    file,
+                    indent=2,
+                )
             print("Saved best model")
         else:
             no_improvement += 1
@@ -129,8 +140,7 @@ def train_model(model, training_dataloader, val_dataloader, optimizer, loss_func
 
     return model, train_losses, val_losses
     
-num_epochs = 10
-tiny_model, train_losses, val_losses = train_model(model=tiny_model, training_dataloader=training_dataloader, val_dataloader=val_dataloader, optimizer=optimizer, loss_function=cross_entropy_loss, device=device, num_epochs=num_epochs, patience=3, save_path="best_model.pth")
+tiny_model, train_losses, val_losses = train_model(model=tiny_model, training_dataloader=training_dataloader, val_dataloader=val_dataloader, optimizer=optimizer, loss_function=cross_entropy_loss, device=device, num_epochs=10, patience=3, save_path="best_model.pth")
 plt.plot(train_losses, label="Training Losses")
 plt.plot(val_losses, label="Validation Losses")
 plt.xlabel("Epoch")

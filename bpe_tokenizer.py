@@ -17,13 +17,13 @@ def train_bpe_tokenizer(data, save_path, vocab_size = 8000):
 
     tokenizer = Tokenizer(BPE(unk_token="<UNK>"))
 
-    # Normalize data, Pre-tokenize, 
-    tokenizer.normalizer = Sequence([NFKC(),Lowercase()])
+    # Normalize data, Pre-tokenize Keep the Capitalization for similar to BERT case
+    # tokenizer.normalizer = Sequence([NFKC(),Lowercase()])
     tokenizer.pre_tokenizer = ByteLevel(add_prefix_space=True)
     tokenizer.decoder = ByteLevelDecoder()
 
     #Define training
-    trainer = BpeTrainer(vocab_size=8000, min_frequency=2, special_tokens=["<PAD>", "<UNK>"], initial_alphabet=ByteLevel.alphabet())
+    trainer = BpeTrainer(vocab_size=vocab_size, min_frequency=2, special_tokens=["<PAD>", "<UNK>"], initial_alphabet=ByteLevel.alphabet())
     tokenizer.train_from_iterator((row["prompt"] for row in data), trainer= trainer)
     tokenizer.save(save_path)
 
@@ -32,10 +32,10 @@ def train_bpe_tokenizer(data, save_path, vocab_size = 8000):
 def load_bpe_tokenizer(save_path):
     return Tokenizer.from_file(save_path)
 
-def get_bpe_tokenizer(data, save_path, vocab_size=8000):
+def get_bpe_tokenizer(data, save_path, vocab_size=8000, force_retrain=False):
     tokenizer_path = Path(save_path)
 
-    if tokenizer_path.exists():
+    if tokenizer_path.exists() and not force_retrain:
         return load_bpe_tokenizer(save_path)
 
     return train_bpe_tokenizer(data= data, save_path= save_path, vocab_size= vocab_size)
