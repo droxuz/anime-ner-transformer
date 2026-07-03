@@ -1,0 +1,609 @@
+{
+  "definition_rule": {
+    "GENRE": "A recognizable story, market, or structural category.",
+    "THEME": "An idea, conflict, or question that the story explores."
+  },
+  "genres": [
+    {
+      "canonical": "action",
+      "aliases": [
+        "action"
+      ]
+    },
+    {
+      "canonical": "adventure",
+      "aliases": [
+        "adventure"
+      ]
+    },
+    {
+      "canonical": "comedy",
+      "aliases": [
+        "comedy"
+      ]
+    },
+    {
+      "canonical": "drama",
+      "aliases": [
+        "drama"
+      ]
+    },
+    {
+      "canonical": "fantasy",
+      "aliases": [
+        "fantasy"
+      ]
+    },
+    {
+      "canonical": "science fiction",
+      "aliases": [
+        "science fiction",
+        "sci-fi"
+      ]
+    },
+    {
+      "canonical": "romance",
+      "aliases": [
+        "romance"
+      ]
+    },
+    {
+      "canonical": "mystery",
+      "aliases": [
+        "mystery"
+      ]
+    },
+    {
+      "canonical": "horror",
+      "aliases": [
+        "horror"
+      ]
+    },
+    {
+      "canonical": "thriller",
+      "aliases": [
+        "thriller"
+      ]
+    },
+    {
+      "canonical": "sports",
+      "aliases": [
+        "sports"
+      ]
+    },
+    {
+      "canonical": "slice of life",
+      "aliases": [
+        "slice of life"
+      ]
+    },
+    {
+      "canonical": "historical drama",
+      "aliases": [
+        "historical drama",
+        "historical fiction"
+      ]
+    },
+    {
+      "canonical": "military",
+      "aliases": [
+        "military",
+        "military drama"
+      ]
+    },
+    {
+      "canonical": "mecha",
+      "aliases": [
+        "mecha",
+        "giant robot"
+      ]
+    },
+    {
+      "canonical": "music",
+      "aliases": [
+        "music",
+        "musical drama"
+      ]
+    },
+    {
+      "canonical": "school comedy",
+      "aliases": [
+        "school comedy"
+      ]
+    },
+    {
+      "canonical": "workplace comedy",
+      "aliases": [
+        "workplace comedy"
+      ]
+    },
+    {
+      "canonical": "cooking",
+      "aliases": [
+        "cooking",
+        "food-centered comedy"
+      ]
+    },
+    {
+      "canonical": "detective",
+      "aliases": [
+        "detective",
+        "detective fiction"
+      ]
+    },
+    {
+      "canonical": "martial arts",
+      "aliases": [
+        "martial arts"
+      ]
+    },
+    {
+      "canonical": "space opera",
+      "aliases": [
+        "space opera"
+      ]
+    },
+    {
+      "canonical": "cyberpunk",
+      "aliases": [
+        "cyberpunk"
+      ]
+    },
+    {
+      "canonical": "isekai",
+      "aliases": [
+        "isekai",
+        "other-world fantasy"
+      ]
+    },
+    {
+      "canonical": "crime drama",
+      "aliases": [
+        "crime drama",
+        "crime thriller"
+      ]
+    },
+    {
+      "canonical": "medical drama",
+      "aliases": [
+        "medical drama"
+      ]
+    },
+    {
+      "canonical": "supernatural",
+      "aliases": [
+        "supernatural",
+        "supernatural drama"
+      ]
+    },
+    {
+      "canonical": "psychological thriller",
+      "aliases": [
+        "psychological thriller"
+      ]
+    },
+    {
+      "canonical": "romantic comedy",
+      "aliases": [
+        "romantic comedy",
+        "rom-com"
+      ]
+    },
+    {
+      "canonical": "dark fantasy",
+      "aliases": [
+        "dark fantasy"
+      ]
+    },
+    {
+      "canonical": "post-apocalyptic",
+      "aliases": [
+        "post-apocalyptic",
+        "post-apocalyptic fiction"
+      ]
+    },
+    {
+      "canonical": "samurai",
+      "aliases": [
+        "samurai",
+        "samurai drama"
+      ]
+    },
+    {
+      "canonical": "magical girl",
+      "aliases": [
+        "magical girl"
+      ]
+    },
+    {
+      "canonical": "game-centered adventure",
+      "aliases": [
+        "game-centered adventure",
+        "gaming adventure"
+      ]
+    }
+  ],
+  "themes": [
+    {
+      "canonical": "found family",
+      "aliases": [
+        "found family",
+        "chosen family"
+      ]
+    },
+    {
+      "canonical": "redemption",
+      "aliases": [
+        "redemption",
+        "earning redemption"
+      ]
+    },
+    {
+      "canonical": "personal identity",
+      "aliases": [
+        "personal identity",
+        "identity"
+      ]
+    },
+    {
+      "canonical": "grief and healing",
+      "aliases": [
+        "grief and healing",
+        "coping with grief"
+      ]
+    },
+    {
+      "canonical": "rivalry",
+      "aliases": [
+        "rivalry",
+        "friendly rivalry"
+      ]
+    },
+    {
+      "canonical": "political corruption",
+      "aliases": [
+        "political corruption",
+        "corrupt institutions"
+      ]
+    },
+    {
+      "canonical": "survival under pressure",
+      "aliases": [
+        "survival under pressure",
+        "endurance under pressure"
+      ]
+    },
+    {
+      "canonical": "growing up",
+      "aliases": [
+        "growing up",
+        "the transition into adulthood"
+      ]
+    },
+    {
+      "canonical": "friendship",
+      "aliases": [
+        "friendship",
+        "loyalty between friends"
+      ]
+    },
+    {
+      "canonical": "revenge and consequences",
+      "aliases": [
+        "revenge and consequences",
+        "the cost of revenge"
+      ]
+    },
+    {
+      "canonical": "moral ambiguity",
+      "aliases": [
+        "moral ambiguity",
+        "uncertain morality"
+      ]
+    },
+    {
+      "canonical": "ambition",
+      "aliases": [
+        "ambition",
+        "the price of ambition"
+      ]
+    },
+    {
+      "canonical": "isolation",
+      "aliases": [
+        "isolation",
+        "social isolation"
+      ]
+    },
+    {
+      "canonical": "responsibility",
+      "aliases": [
+        "responsibility",
+        "accepting responsibility"
+      ]
+    },
+    {
+      "canonical": "the cost of war",
+      "aliases": [
+        "the cost of war",
+        "war and its consequences"
+      ]
+    },
+    {
+      "canonical": "humanity and technology",
+      "aliases": [
+        "humanity and technology",
+        "technology's effect on humanity"
+      ]
+    },
+    {
+      "canonical": "environmental decline",
+      "aliases": [
+        "environmental decline",
+        "ecological collapse"
+      ]
+    },
+    {
+      "canonical": "family expectations",
+      "aliases": [
+        "family expectations",
+        "pressure from family"
+      ]
+    },
+    {
+      "canonical": "competition and teamwork",
+      "aliases": [
+        "competition and teamwork",
+        "cooperation under competition"
+      ]
+    },
+    {
+      "canonical": "travel and discovery",
+      "aliases": [
+        "travel and discovery",
+        "discovery through travel"
+      ]
+    },
+    {
+      "canonical": "memory",
+      "aliases": [
+        "memory",
+        "the reliability of memory"
+      ]
+    },
+    {
+      "canonical": "forgiveness",
+      "aliases": [
+        "forgiveness",
+        "learning to forgive"
+      ]
+    },
+    {
+      "canonical": "social class",
+      "aliases": [
+        "social class",
+        "class inequality"
+      ]
+    },
+    {
+      "canonical": "justice versus law",
+      "aliases": [
+        "justice versus law",
+        "law and justice"
+      ]
+    },
+    {
+      "canonical": "sacrifice",
+      "aliases": [
+        "sacrifice",
+        "personal sacrifice"
+      ]
+    },
+    {
+      "canonical": "leadership",
+      "aliases": [
+        "leadership",
+        "learning to lead"
+      ]
+    },
+    {
+      "canonical": "fear of failure",
+      "aliases": [
+        "fear of failure",
+        "anxiety about failure"
+      ]
+    },
+    {
+      "canonical": "trust",
+      "aliases": [
+        "trust",
+        "learning to trust"
+      ]
+    },
+    {
+      "canonical": "belonging",
+      "aliases": [
+        "belonging",
+        "the search for belonging"
+      ]
+    },
+    {
+      "canonical": "duty versus freedom",
+      "aliases": [
+        "duty versus freedom",
+        "freedom against duty"
+      ]
+    },
+    {
+      "canonical": "human connection",
+      "aliases": [
+        "human connection",
+        "forming meaningful connections"
+      ]
+    },
+    {
+      "canonical": "the meaning of home",
+      "aliases": [
+        "the meaning of home",
+        "what makes a home"
+      ]
+    },
+    {
+      "canonical": "power and corruption",
+      "aliases": [
+        "power and corruption",
+        "the corrupting effect of power"
+      ]
+    },
+    {
+      "canonical": "artistic expression",
+      "aliases": [
+        "artistic expression",
+        "creativity and self-expression"
+      ]
+    },
+    {
+      "canonical": "tradition versus change",
+      "aliases": [
+        "tradition versus change",
+        "tradition and social change"
+      ]
+    },
+    {
+      "canonical": "second chances",
+      "aliases": [
+        "second chances",
+        "starting over"
+      ]
+    },
+    {
+      "canonical": "self-acceptance",
+      "aliases": [
+        "self-acceptance",
+        "accepting oneself"
+      ]
+    },
+    {
+      "canonical": "teamwork",
+      "aliases": [
+        "teamwork",
+        "working as a team"
+      ]
+    },
+    {
+      "canonical": "obsession",
+      "aliases": [
+        "obsession",
+        "the danger of obsession"
+      ]
+    },
+    {
+      "canonical": "healing",
+      "aliases": [
+        "healing",
+        "emotional recovery"
+      ]
+    },
+    {
+      "canonical": "the value of ordinary life",
+      "aliases": [
+        "the value of ordinary life",
+        "meaning in everyday life"
+      ]
+    },
+    {
+      "canonical": "courage",
+      "aliases": [
+        "courage",
+        "acting despite fear"
+      ]
+    },
+    {
+      "canonical": "truth and deception",
+      "aliases": [
+        "truth and deception",
+        "lies and hidden truths"
+      ]
+    },
+    {
+      "canonical": "generational conflict",
+      "aliases": [
+        "generational conflict",
+        "conflict between generations"
+      ]
+    },
+    {
+      "canonical": "loss of innocence",
+      "aliases": [
+        "loss of innocence",
+        "the end of childhood innocence"
+      ]
+    },
+    {
+      "canonical": "hope during crisis",
+      "aliases": [
+        "hope during crisis",
+        "maintaining hope in a crisis"
+      ]
+    },
+    {
+      "canonical": "love and vulnerability",
+      "aliases": [
+        "love and vulnerability",
+        "emotional vulnerability in love"
+      ]
+    }
+  ],
+  "contrast_pairs": [
+    {
+      "genre": "romance",
+      "theme": "love and vulnerability",
+      "rule": "Romance names the story category; love and vulnerability names the idea explored."
+    },
+    {
+      "genre": "sports",
+      "theme": "competition and teamwork",
+      "rule": "Sports names the activity-centered category; competition and teamwork names the underlying relationship or conflict."
+    },
+    {
+      "genre": "military",
+      "theme": "the cost of war",
+      "rule": "Military names the setting/category; the cost of war names the idea examined."
+    },
+    {
+      "genre": "mecha",
+      "theme": "humanity and technology",
+      "rule": "Mecha names the robot-centered category; humanity and technology names the philosophical concern."
+    },
+    {
+      "genre": "historical drama",
+      "theme": "tradition versus change",
+      "rule": "Historical drama names the period-based category; tradition versus change names the central tension."
+    },
+    {
+      "genre": "slice of life",
+      "theme": "the value of ordinary life",
+      "rule": "Slice of life names the narrative mode; the value of ordinary life names what the narrative may express."
+    },
+    {
+      "genre": "crime drama",
+      "theme": "justice versus law",
+      "rule": "Crime drama names the category; justice versus law names the moral question."
+    },
+    {
+      "genre": "psychological thriller",
+      "theme": "personal identity",
+      "rule": "Psychological thriller names the suspense category; personal identity names the subject explored."
+    },
+    {
+      "genre": "dark fantasy",
+      "theme": "power and corruption",
+      "rule": "Dark fantasy names the category and tone; power and corruption names the idea."
+    },
+    {
+      "genre": "isekai",
+      "theme": "belonging",
+      "rule": "Isekai names transport to another world; belonging names the character concern."
+    }
+  ]
+}
