@@ -10,10 +10,12 @@ from pathlib import Path
 
 #Loads Config
 training_path, testing_path, val_path, label_map_path, save_path, label_to_id = get_config()
+mal_synopsis_path = "data/anime_training_data/mal_synopsis.jsonl"
+pretrained_bpe_path = "data/anime_training_data/synopsis_pretrained_bpe_tokenizer"
 
 #data is a dictionary of "prompt", "tokens", "labels"
 #training the BPE using the data
-def train_bpe_tokenizer(data, save_path, vocab_size = 8000):
+def train_bpe_tokenizer(data, save_path, vocab_size = 40000):
 
     tokenizer = Tokenizer(BPE(unk_token="<UNK>"))
 
@@ -32,7 +34,7 @@ def train_bpe_tokenizer(data, save_path, vocab_size = 8000):
 def load_bpe_tokenizer(save_path):
     return Tokenizer.from_file(save_path)
 
-def get_bpe_tokenizer(data, save_path, vocab_size=8000, force_retrain=False):
+def get_bpe_tokenizer(data, save_path, vocab_size=40000, force_retrain=False):
     tokenizer_path = Path(save_path)
 
     if tokenizer_path.exists() and not force_retrain:
@@ -40,5 +42,5 @@ def get_bpe_tokenizer(data, save_path, vocab_size=8000, force_retrain=False):
 
     return train_bpe_tokenizer(data= data, save_path= save_path, vocab_size= vocab_size)
 
-#data = load_jsonl(training_path)
-#BPE_tokens = train_bpe_tokenizer(data, save_path, vocab_size= 8000)
+#synopsis_data = load_jsonl(mal_synopsis_path)
+#BPE_tokens = train_bpe_tokenizer(synopsis_data, pretrained_bpe_path)

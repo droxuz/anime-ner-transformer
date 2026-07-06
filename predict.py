@@ -10,40 +10,51 @@ from gazetteer import AnimeGazetteer
 MAX_LEN = 100
 TOKEN_PATTERN = re.compile(r"[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*|'[A-Za-z]+|[^\w\s]")
 
-# Potential Solution to predictions large title spans, partition the text and plug each partition into prediction
-def define_partitions(prompt):
-    sentences = re.split(r'(?<=[,.!?;])\s', prompt)
-    return [s.strip() for s in sentences if s.strip()]
-
-def normalize_bio_labels(labels):
-    normalized = []
-    previous_entity = None
+def repair_bio(labels):
+    repaired = []
+    previous = "O"
 
     for label in labels:
-        if label == "O":
-            normalized.append(label)
-            previous_entity = None
-            continue
+        if label.startswith("I-"):
+            entity_type = label.split("-", 1)[1]
 
-        prefix, entity = label.split("-", 1)
-        if prefix == "I" and previous_entity != entity:
-            label = f"B-{entity}"
+            valid_previous = {f"B-{entity_type}", f"I-{entity_type}"}
 
-        normalized.append(label)
-        previous_entity = entity
+            if previous not in valid_previous:
+                label = "O"
 
-    return normalized
+        repaired.append(label)
+        previous = label
+
+    return repaired
+
+
+def repair_word_predictions(word_predictions):
+    labels = [prediction["label"] for prediction in word_predictions]
+
+    repaired_labels = repair_bio(labels)
+
+    repaired_predictions = []
+
+    for prediction, repaired_label in zip(word_predictions, repaired_labels):
+        repaired_predictions.append({"word": prediction["word"], "label": repaired_label})
+
+    return repaired_predictions
+
+# Potential Solution to predictions large title spans, partition the text and plug each partition into prediction
+def define_partitions(prompt):
+    sentences = re.split(r'(?<=[.!?;])\s', prompt)
+    return [s.strip() for s in sentences if s.strip()]
+
+
 
 
 def convert_to_word_predictions(words, word_ids, predicted_ids, id_to_label):
     predictions = []
     seen_word_ids = set()
-    labels = normalize_bio_labels([
-        id_to_label[predicted_id]
-        for predicted_id in predicted_ids
-    ])
+    
 
-    for word_id, label in zip(word_ids, labels):
+    for word_id, predicted_ids in zip(word_ids, predicted_ids):
 
         if word_id is None or word_id in seen_word_ids:
             continue
@@ -52,7 +63,7 @@ def convert_to_word_predictions(words, word_ids, predicted_ids, id_to_label):
 
         predictions.append({
             "word": words[word_id],
-            "label": label
+            "label": id_to_label[predicted_ids]
         })
 
     return predictions
@@ -68,10 +79,16 @@ def apply_gazetteer_title_labels(word_predictions, gazetteer):
     for match in matches:
         start = match["start_token"]
         end = match["end_token"]
+        if end - start < 2:
+            continue
+
         word_predictions[start]["label"] = "B-TITLE"
 
         for index in range(start + 1, end):
             word_predictions[index]["label"] = "I-TITLE"
+
+        if(end < len(word_predictions) and word_predictions[end]["label"] == "I-TITLE"):
+            word_predictions[end]["label"] = 'O'
 
     return word_predictions
 
@@ -223,8 +240,10 @@ def predict_tags(prompt, model, tokenizer, id_to_label, device, max_len=100, gaz
         predicted_ids=predicted_ids,
         id_to_label=id_to_label,
     )
+    
     word_predictions = apply_gazetteer_title_labels(word_predictions, gazetteer)
     word_predictions = apply_genre_theme_labels(word_predictions, tag_lexicon)
+    word_predictions = repair_word_predictions(word_predictions)
     return predictions, word_predictions
     
 # Partition based input into model
