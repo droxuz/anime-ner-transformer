@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 
 class TinyTransformer(nn.Module):
-    def __init__(self, vocab_size, num_labels, max_len = 100, d_model = 128):
+    def __init__(self, vocab_size, num_labels, max_len = 1000, d_model = 128):
         super().__init__()
         
         # define layers here

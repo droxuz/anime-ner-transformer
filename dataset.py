@@ -31,7 +31,7 @@ def load_jsonl(path):
 
 # Dataset
 class AnimeBPEDataset(Dataset):
-    def __init__(self, data, tokenizer, label_to_id, max_len= 100):
+    def __init__(self, data, tokenizer, label_to_id, max_len= 1000):
         self.data = data
         self.tokenizer = tokenizer
         self.label_to_id = label_to_id
