@@ -25,7 +25,7 @@ def train_bpe_tokenizer(data, save_path, vocab_size = 50000):
     tokenizer.decoder = ByteLevelDecoder()
 
     #Define training
-    trainer = BpeTrainer( min_frequency=2, special_tokens=["[PAD]", "[UNK]", "[CLS]", "[SEP]"], initial_alphabet=ByteLevel.alphabet())
+    trainer = BpeTrainer( vocab_size= vocab_size, min_frequency=2, special_tokens=["[PAD]", "[UNK]", "[CLS]", "[SEP]", "[MASK]"], initial_alphabet=ByteLevel.alphabet())
     tokenizer.train_from_iterator(data, trainer= trainer)
     tokenizer.save(save_path)
 

@@ -78,7 +78,7 @@ class AnimeBPEDataset(Dataset):
         input_ids = input_ids + [self.pad_id] * padding_length
         label_ids = label_ids + [-100] * padding_length
 
-
+        
         #Tensors
         return {
             "input_ids": torch.tensor(input_ids, dtype=torch.long),
