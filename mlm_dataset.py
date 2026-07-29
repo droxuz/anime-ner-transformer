@@ -2,6 +2,28 @@ import torch
 from torch.utils.data import Dataset
 import re
 import random
+import json
+
+def load_jsonl(path):
+    data = []
+    with open(path, 'r', encoding = 'UTF-8') as file:
+        for line in file:
+            row = json.loads(line)
+            data.append(row)
+    return data
+
+# Split the data into 80% and 20% based upon training and validation
+def split_data(data, val_ratio = 0.2, seed = 321):
+    data = data[*]
+    random.seed(seed)
+    random.shuffle(val_ratio)
+
+    val_size = int(len(data) * val_ratio)
+    train_data = data[val_size:]
+    val_data = data[:val_size]
+
+    return train_data, val_data
+
 class MLMDataset(Dataset):
     def __init__(self, data, tokenizer, max_len, mask_probability):
         self.data = data

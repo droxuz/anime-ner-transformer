@@ -8,10 +8,12 @@ from tokenizers.decoders import ByteLevel as ByteLevelDecoder
 from tokenizers.normalizers import Sequence, NFKC, Lowercase
 from pathlib import Path
 
-#Loads Config
-training_path, testing_path, val_path, label_map_path, save_path, label_to_id = get_config()
-mal_synopsis_path = "data/anime_training_data/mal_synopsis.jsonl"
-pretrained_bpe_path = "data/anime_training_data/synopsis_pretrained_bpe_tokenizer"
+# #Loads Config
+# training_path, testing_path, val_path, label_map_path, save_path, label_to_id = get_config()
+# mal_synopsis_path = "data/anime_training_data/mal_synopsis.jsonl"
+# pretrained_bpe_path = "data/anime_training_data/synopsis_pretrained_bpe_tokenizer"
+
+
 
 #data is a dictionary of "prompt", "tokens", "labels"
 #training the BPE using the data
