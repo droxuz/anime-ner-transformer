@@ -2,11 +2,12 @@ import torch
 import torch.nn as nn
 
 
-class MLMTransformer(nn.module):
+class MLMTransformer(nn.Module):
     def __init__(self, vocab_size, max_len, pad_id, d_model, nhead, num_encoder_layers, dim_feedforward, dropout):
         super().__init__()
 
         # Embeddings, Layers, and Layer stack
+        self.dropout = nn.Dropout(dropout)
         self.token_embeddings = nn.Embedding(vocab_size, d_model, padding_idx= pad_id)
         self.position_embeddings = nn.Embedding(max_len, d_model)
         self.encoder_layer = nn.TransformerEncoderLayer(d_model, nhead, dim_feedforward, dropout, batch_first= True)

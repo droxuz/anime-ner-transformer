@@ -8,13 +8,13 @@ import matplotlib.pyplot as plt
 from pathlib import Path
 
 # Config
-BATCH_SIZE = 64
+BATCH_SIZE = 16
 MAX_LEN = 360
 MASK_PROBABILITY = 0.15
-D_MODEL = 512
+D_MODEL = 256
 NHEAD = 8
-DIM_FEEDFORWARD = 2048
-NUM_ENCODER_LAYERS = 8
+DIM_FEEDFORWARD = 1024
+NUM_ENCODER_LAYERS = 6
 DROPOUT = 0.1
 EPOCH = 15
 LR = 3e-4
@@ -39,18 +39,18 @@ VOCAB_SIZE = tokenizer.get_vocab_size()
 PAD_ID = tokenizer.token_to_id("[PAD]")
 
 # Dataloading
-training_dataset = MLMDataset(train_data, tokenizer, MAX_LEN)
-validation_dataset = MLMDataset(val_data, tokenizer, MAX_LEN)
+training_dataset = MLMDataset(train_data, tokenizer, MAX_LEN, MASK_PROBABILITY)
+validation_dataset = MLMDataset(val_data, tokenizer, MAX_LEN, MASK_PROBABILITY)
 
 training_dataload = DataLoader(training_dataset, BATCH_SIZE, shuffle= True)
-validation_dataload = DataLoader(validation_dataset, BATCH_SIZE, shuffle= True)
+validation_dataload = DataLoader(validation_dataset, BATCH_SIZE, shuffle= False)
 
 
 # Model
 torch.manual_seed(321)
 MLMModel = MLMTransformer(VOCAB_SIZE, MAX_LEN, PAD_ID, D_MODEL, NHEAD, NUM_ENCODER_LAYERS, DIM_FEEDFORWARD, DROPOUT).to(device)
 entropyloss = nn.CrossEntropyLoss(ignore_index= -100)
-optimizer = torch.optim.AdamW(MLMTransformer.parameters(), lr=1e-4)
+optimizer = torch.optim.AdamW(MLMModel.parameters(), lr=LR)
 
 # Training loop for training data
 # Trains the model from Forward, Loss, Backward, and Optimize
@@ -61,7 +61,7 @@ def train_loop(model, train_load, entropyloss, optimizer, device):
 
     for batch in train_load:
         input_ids = batch["input_ids"].to(device)
-        label_ids = batch["label_ids"].to(device)
+        labels = batch["labels"].to(device)
         attention_mask = batch["attention_mask"].to(device)
 
         optimizer.zero_grad()
@@ -72,8 +72,8 @@ def train_loop(model, train_load, entropyloss, optimizer, device):
         # Loss on the masked tokens ignores -100
         # Takes logits of batch, seq_len, vocab into batch * seq_len, vocab
         # Takes batch, seq_len into batch * seq_len
-        loss = entropyloss(logits.view(-1, logits.size(-1)), label_ids.view(-1))
-        loss.backwards()
+        loss = entropyloss(logits.view(-1, logits.size(-1)), labels.view(-1))
+        loss.backward()
         optimizer.step()
         total_loss += loss.item()
 
@@ -90,13 +90,13 @@ def validation(model, val_load, entropyloss, device):
     with torch.no_grad():
         for batch in val_load:
             input_ids = batch["input_ids"].to(device)
-            label_ids = batch["label_ids"].to(device)
+            labels = batch["labels"].to(device)
             attention_mask = batch["attention_mask"].to(device)
 
             # Model forward pass on validation data
             logits = model(input_ids, attention_mask)
 
-            loss = entropyloss(logits.view(-1, logits.size(-1)), label_ids.view(-1))
+            loss = entropyloss(logits.view(-1, logits.size(-1)), labels.view(-1))
             total_loss += loss.item()
 
         avg_loss = total_loss / len(val_load)
@@ -140,8 +140,8 @@ def plot_losses(train_loss, val_loss):
     plt.xlabel("Epoch")
     plt.ylabel("Loss")
     plt.title("Losses per epoch")
-    plt.show(train_loss, label="Training Loss")
-    plt.show(val_loss, label="Validation Loss")
+    plt.plot(train_loss, label="Training Loss")
+    plt.plot(val_loss, label="Validation Loss")
     plt.legend()
     plt.show()
 
