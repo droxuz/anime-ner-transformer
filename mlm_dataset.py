@@ -25,11 +25,12 @@ def split_data(data, val_ratio = 0.2, seed = 321):
     return train_data, val_data
 
 class MLMDataset(Dataset):
-    def __init__(self, data, tokenizer, max_len, mask_probability):
+    def __init__(self, data, tokenizer, max_len, mask_probability, fixed_masking):
         self.data = data
         self.tokenizer = tokenizer
         self.max_len = max_len
         self.mask_probability = mask_probability
+        self.fixed_masking = fixed_masking
         self.cls_id = self.tokenizer.token_to_id("[CLS]")
         self.sep_id = self.tokenizer.token_to_id("[SEP]")
         self.pad_id = self.tokenizer.token_to_id("[PAD]")
@@ -121,7 +122,8 @@ class MLMDataset(Dataset):
         return selected_positions
         
     def __getitem__(self, idx):
-        
+        if self.fixed_masking:
+            random.seed(321+idx)
 
         # Adding of the [SEP] [CLS] [UNK] Tags to the synopses
         # Max len of synopsis is 325 will use 384 max_len 

@@ -14,9 +14,9 @@ MASK_PROBABILITY = 0.15
 D_MODEL = 256
 NHEAD = 8
 DIM_FEEDFORWARD = 1024
-NUM_ENCODER_LAYERS = 6
-DROPOUT = 0.1
-EPOCH = 15
+NUM_ENCODER_LAYERS = 4
+DROPOUT = 0.2
+EPOCH = 30
 LR = 3e-4
 
 # Device
@@ -39,8 +39,8 @@ VOCAB_SIZE = tokenizer.get_vocab_size()
 PAD_ID = tokenizer.token_to_id("[PAD]")
 
 # Dataloading
-training_dataset = MLMDataset(train_data, tokenizer, MAX_LEN, MASK_PROBABILITY)
-validation_dataset = MLMDataset(val_data, tokenizer, MAX_LEN, MASK_PROBABILITY)
+training_dataset = MLMDataset(train_data, tokenizer, MAX_LEN, MASK_PROBABILITY, fixed_masking= False)
+validation_dataset = MLMDataset(val_data, tokenizer, MAX_LEN, MASK_PROBABILITY, fixed_masking= True)
 
 training_dataload = DataLoader(training_dataset, BATCH_SIZE, shuffle= True)
 validation_dataload = DataLoader(validation_dataset, BATCH_SIZE, shuffle= False)
@@ -50,7 +50,10 @@ validation_dataload = DataLoader(validation_dataset, BATCH_SIZE, shuffle= False)
 torch.manual_seed(321)
 MLMModel = MLMTransformer(VOCAB_SIZE, MAX_LEN, PAD_ID, D_MODEL, NHEAD, NUM_ENCODER_LAYERS, DIM_FEEDFORWARD, DROPOUT).to(device)
 entropyloss = nn.CrossEntropyLoss(ignore_index= -100)
-optimizer = torch.optim.AdamW(MLMModel.parameters(), lr=LR)
+optimizer = torch.optim.AdamW(MLMModel.parameters(), lr=LR, weight_decay= 0.01)
+
+# Stalling in terms of learning need to change learning rate on stall
+scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode="min", factor= 0.5, patience= 2)
 
 # Training loop for training data
 # Trains the model from Forward, Loss, Backward, and Optimize
@@ -81,9 +84,8 @@ def train_loop(model, train_load, entropyloss, optimizer, device):
     return avg_loss
 
 # Validation loss calculations
-# Takes validation dataloader, calculates crossentroploss
+# Takes validation dataloader, calculates crossentropyloss
 # Returns average loss for comparison
-
 def validation(model, val_load, entropyloss, device):
     model.eval()
     total_loss = 0.0
@@ -104,7 +106,7 @@ def validation(model, val_load, entropyloss, device):
     
 # Training Loop to train the model
 # Loops through epochs to train the model and calculates training, validation losses 
-def complete_training_loop(model, train_load, val_load, entropyloss, optimizer, savepath, epochs, device):
+def complete_training_loop(model, train_load, val_load, entropyloss, optimizer, scheduler, savepath, epochs, device):
     train_loss = []
     val_loss = []
     best_val_loss = float("inf")
@@ -120,6 +122,7 @@ def complete_training_loop(model, train_load, val_load, entropyloss, optimizer, 
 
         v_loss = validation(model, val_load, entropyloss, device)
         val_loss.append(v_loss)
+        scheduler.step(v_loss)
 
         # Select best model from epochs
         print(f"Epoch: {epoch}")
@@ -143,7 +146,9 @@ def plot_losses(train_loss, val_loss):
     plt.plot(train_loss, label="Training Loss")
     plt.plot(val_loss, label="Validation Loss")
     plt.legend()
+    plt.savefig("data/anime_training_data/training_model.png")
     plt.show()
+    
 
-train_loss, val_loss = complete_training_loop(MLMModel, training_dataload, validation_dataload, entropyloss, optimizer, mlm_model, EPOCH, device)
+train_loss, val_loss = complete_training_loop(MLMModel, training_dataload, validation_dataload, entropyloss, optimizer, scheduler, mlm_model, EPOCH, device)
 plot_losses(train_loss, val_loss)
