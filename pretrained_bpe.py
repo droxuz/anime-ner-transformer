@@ -17,7 +17,7 @@ from pathlib import Path
 
 #data is a dictionary of "prompt", "tokens", "labels"
 #training the BPE using the data
-def train_bpe_tokenizer(data, save_path, vocab_size = 50000):
+def train_bpe_tokenizer(data, save_path, vocab_size = 40000):
 
     tokenizer = Tokenizer(BPE(unk_token="[UNK]"))
 
@@ -36,7 +36,7 @@ def train_bpe_tokenizer(data, save_path, vocab_size = 50000):
 def load_bpe_tokenizer(save_path):
     return Tokenizer.from_file(save_path)
 
-def get_bpe_tokenizer(data, save_path, vocab_size=50000, force_retrain=False):
+def get_bpe_tokenizer(data, save_path, force_retrain=False):
     tokenizer_path = Path(save_path)
 
     if tokenizer_path.exists() and not force_retrain:

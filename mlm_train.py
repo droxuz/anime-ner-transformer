@@ -14,9 +14,9 @@ MASK_PROBABILITY = 0.15
 D_MODEL = 256
 NHEAD = 8
 DIM_FEEDFORWARD = 1024
-NUM_ENCODER_LAYERS = 4
+NUM_ENCODER_LAYERS = 6
 DROPOUT = 0.2
-EPOCH = 30
+EPOCH = 40
 LR = 3e-4
 
 # Device
@@ -35,6 +35,7 @@ train_data, val_data = split_data(synopses)
 
 # BPE Tokenizer
 tokenizer = get_bpe_tokenizer(train_data, BPE_tokenizer)
+print(tokenizer.get_vocab_size())
 VOCAB_SIZE = tokenizer.get_vocab_size()
 PAD_ID = tokenizer.token_to_id("[PAD]")
 
@@ -53,7 +54,7 @@ entropyloss = nn.CrossEntropyLoss(ignore_index= -100)
 optimizer = torch.optim.AdamW(MLMModel.parameters(), lr=LR, weight_decay= 0.01)
 
 # Stalling in terms of learning need to change learning rate on stall
-scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode="min", factor= 0.5, patience= 2)
+scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode="min", factor= 0.5, patience= 1, threshold= 0.01, min_lr=1e-5)
 
 # Training loop for training data
 # Trains the model from Forward, Loss, Backward, and Optimize
@@ -149,6 +150,42 @@ def plot_losses(train_loss, val_loss):
     plt.savefig("data/anime_training_data/training_model.png")
     plt.show()
     
+PROFILE_MEMORY = True
+MEM_EPOCH = 1
+if PROFILE_MEMORY and torch.cuda.is_available():
+    torch.cuda.empty_cache()
+    torch.cuda.reset_peak_memory_stats()
+    torch.cuda.memory._record_memory_history(
+        enabled="all",
+        context="all",
+        stacks="all",
+        max_entries=100000,
+        clear_history=True
+    )
 
-train_loss, val_loss = complete_training_loop(MLMModel, training_dataload, validation_dataload, entropyloss, optimizer, scheduler, mlm_model, EPOCH, device)
-plot_losses(train_loss, val_loss)
+try:
+    train_loss, val_loss = complete_training_loop(
+        MLMModel,
+        training_dataload,
+        validation_dataload,
+        entropyloss,
+        optimizer,
+        scheduler,
+        mlm_model,
+        MEM_EPOCH if PROFILE_MEMORY else EPOCH,
+        device
+    )
+
+finally:
+    if PROFILE_MEMORY and torch.cuda.is_available():
+        torch.cuda.synchronize()
+
+        print("Peak allocated GB:", torch.cuda.max_memory_allocated() / 1024**3)
+        print("Peak reserved GB:", torch.cuda.max_memory_reserved() / 1024**3)
+
+        torch.cuda.memory._dump_snapshot("data/anime_training_data/mem_alloc.pickle")
+        torch.cuda.memory._record_memory_history(enabled=None)
+if not PROFILE_MEMORY:
+    plot_losses(train_loss, val_loss)
+
+

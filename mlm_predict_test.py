@@ -13,7 +13,7 @@ MASK_PROBABILITY = 0.15
 D_MODEL = 256
 NHEAD = 8
 DIM_FEEDFORWARD = 1024
-NUM_ENCODER_LAYERS = 4
+NUM_ENCODER_LAYERS = 6
 DROPOUT = 0.2
 EPOCH = 30
 LR = 3e-4
@@ -44,7 +44,11 @@ mlm_model_state = torch.load(mlm_model_path)
 model.load_state_dict(mlm_model_state)
 model.eval()
 
-example = "The young boy [MASK] on a journey around the world."
+e = "The young boy [MASK] on a journey around the world."
+e2 = "A young boy dreams of becoming a [MASK]."
+e3 = "The story follows a group of students in a [MASK] club."
+e4 = "After losing his family, he gains mysterious [MASK]."
+e5 = "The hero must defeat the demon [MASK]."
 
 # Tokenize example, place boundary tokens, find MASK token, and predict
 # Input: string, tokenizer
@@ -70,12 +74,17 @@ def prediction(example, tokenizer):
 
     mask_logits = logits[0, mask_positions]
     probability = torch.softmax(mask_logits, dim= -1)
-    best_probabilities, best_choices = torch.topk(mask_logits, 10)
+    best_probabilities, best_choices = torch.topk(probability, 10)
 
     for probability, choice in zip(best_probabilities, best_choices):
         choice = choice.item()
         token = tokenizer.decode([choice])
         raw = tokenizer.id_to_token(choice)
         print(f"{token!r:15s} raw={raw!r:15s} prob={probability.item():.6f}")
+    print("---")
 
-prediction(example, tokenizer)
+prediction(e, tokenizer)
+prediction(e2, tokenizer)
+prediction(e3, tokenizer)
+prediction(e4, tokenizer)
+prediction(e5, tokenizer)
