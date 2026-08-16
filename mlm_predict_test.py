@@ -44,6 +44,12 @@ mlm_model_state = torch.load(mlm_model_path)
 model.load_state_dict(mlm_model_state)
 model.eval()
 
+total_params = sum(p.numel() for p in model.parameters())
+trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+
+print(f"Total parameters: {total_params:,}")
+print(f"Trainable parameters: {trainable_params:,}")
+
 e = "The young boy [MASK] on a journey around the world."
 e2 = "A young boy dreams of becoming a [MASK]."
 e3 = "The story follows a group of students in a [MASK] club."

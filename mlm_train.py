@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 from pathlib import Path
 
 # Config
-BATCH_SIZE = 16
+BATCH_SIZE = 32
 MAX_LEN = 360
 MASK_PROBABILITY = 0.15
 D_MODEL = 256
@@ -16,8 +16,20 @@ NHEAD = 8
 DIM_FEEDFORWARD = 1024
 NUM_ENCODER_LAYERS = 6
 DROPOUT = 0.2
-EPOCH = 40
+EPOCH = 50
 LR = 3e-4
+config = {
+    "BATCH_SIZE" : BATCH_SIZE,
+    "MAX_LEN" : MAX_LEN,
+    "MASK_PROBABILITY" : MASK_PROBABILITY,
+    "D_MODEL" : D_MODEL,
+    "NHEAD" : NHEAD,
+    "DIM_FEEDFORWARD" : DIM_FEEDFORWARD,
+    "NUM_ENCODER_LAYERS" : NUM_ENCODER_LAYERS,
+    "DROPOUT" : DROPOUT,
+    "EPOCH" : EPOCH,
+    "LR" : LR
+}
 
 # Device
 if torch.cuda.is_available():
@@ -28,7 +40,9 @@ else:
 # Paths
 mal_synopses = "data/anime_training_data/mal_synopsis.jsonl"
 BPE_tokenizer = "data/anime_training_data/synopsis_pretrained_bpe_tokenizer"
-mlm_model = "data/anime_training_data/MLM_Model.pt"
+latest_model = "data/anime_training_data/MLM_Latest_Model.pt"
+best_model = "data/anime_training_data/MLM_Best_Model.pt"
+
 # Data Splits
 synopses = load_jsonl(mal_synopses)
 train_data, val_data = split_data(synopses)
@@ -54,7 +68,7 @@ entropyloss = nn.CrossEntropyLoss(ignore_index= -100)
 optimizer = torch.optim.AdamW(MLMModel.parameters(), lr=LR, weight_decay= 0.01)
 
 # Stalling in terms of learning need to change learning rate on stall
-scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode="min", factor= 0.5, patience= 1, threshold= 0.01, min_lr=1e-5)
+scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode="min", factor= 0.5, patience= 3, threshold= 0.01, threshold_mode= "abs", cooldown= 1, min_lr=5e-5)
 
 # Training loop for training data
 # Trains the model from Forward, Loss, Backward, and Optimize
@@ -76,7 +90,7 @@ def train_loop(model, train_load, entropyloss, optimizer, device):
         # Loss on the masked tokens ignores -100
         # Takes logits of batch, seq_len, vocab into batch * seq_len, vocab
         # Takes batch, seq_len into batch * seq_len
-        loss = entropyloss(logits.view(-1, logits.size(-1)), labels.view(-1))
+        loss = entropyloss(logits.reshape(-1, logits.size(-1)), labels.reshape(-1))
         loss.backward()
         optimizer.step()
         total_loss += loss.item()
@@ -99,18 +113,32 @@ def validation(model, val_load, entropyloss, device):
             # Model forward pass on validation data
             logits = model(input_ids, attention_mask)
 
-            loss = entropyloss(logits.view(-1, logits.size(-1)), labels.view(-1))
+            loss = entropyloss(logits.reshape(-1, logits.size(-1)), labels.reshape(-1))
             total_loss += loss.item()
 
         avg_loss = total_loss / len(val_load)
         return avg_loss
-    
+
+def load_best(best_model):
+    path = Path(best_model)
+    if not path.exists():
+        return float("inf")
+    best_checkpoint = torch.load(best_model,map_location= "cpu")
+    if isinstance(best_checkpoint, dict) and "best_val_loss" in best_checkpoint:
+        return best_checkpoint["best_val_loss"]
+
+    return float("inf")
+
+def save_checkpoint(path, model, optimizer, scheduler, epoch, best_val_loss, train_loss, val_loss, config):
+    Path(path).parent.mkdir(parents=True, exist_ok=True)
+    torch.save({"epoch": epoch, "model_state_dict": model.state_dict(), "optimizer_state_dict": optimizer.state_dict(), "scheduler_state_dict": scheduler.state_dict() if scheduler is not None else None, "best_val_loss": best_val_loss, "train_loss": train_loss, "val_loss": val_loss, "config": config}, path)
+
 # Training Loop to train the model
 # Loops through epochs to train the model and calculates training, validation losses 
-def complete_training_loop(model, train_load, val_load, entropyloss, optimizer, scheduler, savepath, epochs, device):
+def complete_training_loop(model, train_load, val_load, entropyloss, optimizer, scheduler, latestpath, bestpath, epochs, config, device):
     train_loss = []
     val_loss = []
-    best_val_loss = float("inf")
+    best_val_loss = load_best(bestpath)
     timeout = 0
 
     for epoch in range(epochs):
@@ -124,16 +152,19 @@ def complete_training_loop(model, train_load, val_load, entropyloss, optimizer, 
         v_loss = validation(model, val_load, entropyloss, device)
         val_loss.append(v_loss)
         scheduler.step(v_loss)
-
+        current_lr = optimizer.param_groups[0]["lr"]
+        print(f"Currect LR: {current_lr}")
         # Select best model from epochs
         print(f"Epoch: {epoch}")
         print(f"Validation Loss: {v_loss:.4f}")
         print(f"Training Loss: {t_loss:.4f}")
 
+        save_checkpoint(latestpath, model, optimizer, scheduler, epoch, best_val_loss, train_loss, val_loss, config)
+
         if v_loss < best_val_loss:
             best_val_loss = v_loss
             # Save best model
-            torch.save(model.state_dict(), savepath)
+            save_checkpoint(bestpath, model, optimizer, scheduler, epoch, best_val_loss, train_loss, val_loss, config)
             timeout = 0
         else:
             timeout += 1
@@ -150,7 +181,7 @@ def plot_losses(train_loss, val_loss):
     plt.savefig("data/anime_training_data/training_model.png")
     plt.show()
     
-PROFILE_MEMORY = True
+PROFILE_MEMORY = False
 MEM_EPOCH = 1
 if PROFILE_MEMORY and torch.cuda.is_available():
     torch.cuda.empty_cache()
@@ -164,17 +195,7 @@ if PROFILE_MEMORY and torch.cuda.is_available():
     )
 
 try:
-    train_loss, val_loss = complete_training_loop(
-        MLMModel,
-        training_dataload,
-        validation_dataload,
-        entropyloss,
-        optimizer,
-        scheduler,
-        mlm_model,
-        MEM_EPOCH if PROFILE_MEMORY else EPOCH,
-        device
-    )
+    train_loss, val_loss = complete_training_loop(MLMModel, training_dataload, validation_dataload, entropyloss, optimizer, scheduler, latest_model, best_model, MEM_EPOCH if PROFILE_MEMORY else EPOCH, config ,device)
 
 finally:
     if PROFILE_MEMORY and torch.cuda.is_available():
