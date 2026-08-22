@@ -138,12 +138,21 @@ def save_checkpoint(path, model, optimizer, scheduler, epoch, best_val_loss, tra
 def complete_training_loop(model, train_load, val_load, entropyloss, optimizer, scheduler, latestpath, bestpath, epochs, config, device):
     train_loss = []
     val_loss = []
-    best_val_loss = load_best(bestpath)
+
+    # Best loss from previous saved runs
+    global_best_val_loss = load_best(bestpath)
+
+    # Best loss from this current run only
+    run_best_val_loss = float("inf")
+
     timeout = 0
+    patience = 8
+    min_delta = 0.01
 
     for epoch in range(epochs):
 
-        if timeout > 4:
+        if timeout >= patience:
+            print("Early stopping.")
             break
 
         t_loss = train_loop(model, train_load, entropyloss, optimizer, device)
@@ -151,23 +160,34 @@ def complete_training_loop(model, train_load, val_load, entropyloss, optimizer, 
 
         v_loss = validation(model, val_load, entropyloss, device)
         val_loss.append(v_loss)
-        scheduler.step(v_loss)
+
+        if scheduler is not None:
+            scheduler.step(v_loss)
+
         current_lr = optimizer.param_groups[0]["lr"]
-        print(f"Currect LR: {current_lr}")
-        # Select best model from epochs
+
+        print(f"Current LR: {current_lr}")
         print(f"Epoch: {epoch}")
         print(f"Validation Loss: {v_loss:.4f}")
         print(f"Training Loss: {t_loss:.4f}")
 
-        save_checkpoint(latestpath, model, optimizer, scheduler, epoch, best_val_loss, train_loss, val_loss, config)
+        # Always save latest checkpoint from current run
+        save_checkpoint(bestpath, model, optimizer, scheduler, epoch, global_best_val_loss, train_loss, val_loss, config)
 
-        if v_loss < best_val_loss:
-            best_val_loss = v_loss
-            # Save best model
-            save_checkpoint(bestpath, model, optimizer, scheduler, epoch, best_val_loss, train_loss, val_loss, config)
+        # Early stopping should compare only against this run's best
+        if v_loss < run_best_val_loss - min_delta:
+            run_best_val_loss = v_loss
             timeout = 0
         else:
             timeout += 1
+
+        # Global best checkpoint should only update if this run beats old saved best
+        if v_loss < global_best_val_loss:
+            global_best_val_loss = v_loss
+
+            save_checkpoint(bestpath, model, optimizer, scheduler, epoch, global_best_val_loss, train_loss, val_loss, config)
+
+            print(f"Saved new global best model: {global_best_val_loss:.4f}")
 
     return train_loss, val_loss
 

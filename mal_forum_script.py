@@ -3,14 +3,15 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-
-
+from selenium.common.exceptions import TimeoutException
+import json
 # Traverses the recommendations forum of the MAL website
 # Collects all the posts from pages selected and makes a list of all links to posts
+finetune_path = "data/anime_training_data/finetune_prompt.jsonl"
 MAL = "https://myanimelist.net/forum/?board=16&show="
 link_list = []
 iterator = 0
-max_pages = 50
+max_pages = 150
 driver = webdriver.Chrome()
 wait = WebDriverWait(driver, 10)
 for iterator in range(0, max_pages, 50):
@@ -29,11 +30,20 @@ for iterator in range(0, max_pages, 50):
 recommendation_list = []
 for link in link_list[1:]:
     driver.get(link)
-    post_table = wait.until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, "table[id^='message']")))
-    for post in post_table:
-        text = post.find_element(By.CSS_SELECTOR, ':scope > tbody > tr > td')
-        post_text = text.text.strip()
-        recommendation_list.append(post_text)
+    try:
+        posting_text = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "table[id^='message'] > tbody > tr > td")))
+        text = posting_text.text.strip()
+        if text:
+            recommendation_list.append(text)
+    except TimeoutException:
+        print(f"Timed out")
     time.sleep(10)
-print(recommendation_list[0])
 driver.quit()
+
+def create_jsonl(recommendation_list, path):
+    with open(path, "w", encoding= "UTF-8")as file:
+        for line in recommendation_list:
+            file.write(json.dumps(line, ensure_ascii= False, allow_nan= False)+ "\n")
+
+create_jsonl(recommendation_list, finetune_path)
+
