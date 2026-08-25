@@ -2,12 +2,11 @@ from dataset import load_jsonl
 from finetune_dataset import FTDataset
 from finetune_model import NERTransformer
 from torch.utils.data import DataLoader
-from pretrained_bpe import  train_bpe_tokenizer, get_bpe_tokenizer, load_bpe_tokenizer
+from pretrained_bpe import load_bpe_tokenizer
 import torch.nn as nn
 import torch
 import matplotlib.pyplot as plt
-from pathlib import Path
-
+from sklearn.metrics import classification_report
 BIO_LIB = {
     "O": 0,
     "B-TITLE": 1,
@@ -30,20 +29,9 @@ NHEAD = 8
 DIM_FEEDFORWARD = 1024
 NUM_ENCODER_LAYERS = 6
 DROPOUT = 0.2
-EPOCH = 20
+EPOCH = 30
 LR = 3e-4
-config = {
-    "BATCH_SIZE" : BATCH_SIZE,
-    "MAX_LEN" : MAX_LEN,
-    "MASK_PROBABILITY" : MASK_PROBABILITY,
-    "D_MODEL" : D_MODEL,
-    "NHEAD" : NHEAD,
-    "DIM_FEEDFORWARD" : DIM_FEEDFORWARD,
-    "NUM_ENCODER_LAYERS" : NUM_ENCODER_LAYERS,
-    "DROPOUT" : DROPOUT,
-    "EPOCH" : EPOCH,
-    "LR" : LR
-}
+id_to_label = {v: k for k, v in BIO_LIB.items()}
 
 def load_mlm_encoder_weights(ner_model, mlm_checkpoint_path, device):
     checkpoint = torch.load(mlm_checkpoint_path, map_location=device)
@@ -69,8 +57,8 @@ def load_mlm_encoder_weights(ner_model, mlm_checkpoint_path, device):
     print(f"Loaded {len(filtered_state)} pretrained encoder weights.")
     return ner_model
 
-train_data = load_jsonl("data/anime_training_data/anime_ner_train_bio.jsonl")
-val_data = load_jsonl("data/anime_training_data/anime_ner_val_bio.jsonl")
+train_data = load_jsonl("data/anime_training_data/anime_ner_train_bio_augmented.jsonl")
+val_data = load_jsonl("data/anime_training_data/anime_ner_val_bio_augmented.jsonl")
 tokenizer_path = "data/anime_training_data/synopsis_pretrained_bpe_tokenizer"
 tokenizer = load_bpe_tokenizer(tokenizer_path)
 
@@ -154,6 +142,7 @@ def validate_ner_loop(model, val_loader, criterion, device):
     return avg_loss, accuracy
 
 def fine_tune_ner(model, train_loader, val_loader, criterion, optimizer, epochs, device, save_path):
+    torch.manual_seed(321)
     best_val_loss = float("inf")
     patience = 8
     timeout = 0
@@ -221,4 +210,39 @@ def fine_tune_ner(model, train_loader, val_loader, criterion, optimizer, epochs,
 
     return train_losses, val_losses
 
+def evaluate_f1(model, val_loader, id_to_label, device):
+    model.eval()
+    truth_labels = []
+    prediction_labels = []
+    with torch.no_grad():
+        for batch in val_loader:
+            input_ids = batch["input_ids"].to(device)
+            labels = batch["labels"].to(device)
+            attention_mask = batch["attention_mask"].to(device)
+            logits = model(input_ids, attention_mask)
+            predictions = torch.argmax(logits, dim= -1)
+            masking = labels != -100
+
+            truth_label = labels[masking].cpu().tolist()
+            prediction_label = predictions[masking].cpu().tolist()
+
+            truth_labels.extend(truth_label)
+            prediction_labels.extend(prediction_label)
+    target_names = [id_to_label[i] for i in range(len(id_to_label))]
+
+    print(classification_report(truth_labels, prediction_labels, target_names= target_names, digits = 4, zero_division= 0))
+
 train_losses, val_losses = fine_tune_ner(ner_model, train_loader, val_loader, criterion, optimizer, EPOCH, device, "data/anime_training_data/NER_Best_Model.pt")
+checkpoint = torch.load("data/anime_training_data/NER_Best_Model.pt", map_location=device)
+ner_model.load_state_dict(checkpoint["model_state_dict"])
+
+evaluate_f1(ner_model, val_loader, id_to_label, device)
+
+plt.title("Loss Visual")
+plt.xlabel("Epoch")
+plt.ylabel("loss")
+plt.plot(train_losses, label="Training Loss")
+plt.plot(val_losses, label="Validation Loss")
+plt.legend()
+plt.savefig("data/anime_training_data/finetune_training_model.png")
+plt.show()

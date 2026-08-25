@@ -21,7 +21,7 @@ class FTDataset(Dataset):
 
     def bio_labels_offset(self, text, offsets, entities):
         labels = [self.bio_lib["O"]] * len(offsets)
-        entities = sorted(entities, key= lambda x: (x["start"], x["end"]))
+        entities = sorted(entities, key=lambda x: (int(x["start"]), int(x["end"])))
         for entity in entities:
             entity_start = entity["start"]
             entity_end = entity["end"]

@@ -11,7 +11,7 @@ finetune_path = "data/anime_training_data/finetune_prompt.jsonl"
 MAL = "https://myanimelist.net/forum/?board=16&show="
 link_list = []
 iterator = 0
-max_pages = 150
+max_pages = 300
 driver = webdriver.Chrome()
 wait = WebDriverWait(driver, 10)
 for iterator in range(0, max_pages, 50):
@@ -37,7 +37,7 @@ for link in link_list[1:]:
             recommendation_list.append(text)
     except TimeoutException:
         print(f"Timed out")
-    time.sleep(10)
+    time.sleep(15)
 driver.quit()
 
 def create_jsonl(recommendation_list, path):

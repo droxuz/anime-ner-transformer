@@ -6,3 +6,5 @@ MLM_Best_Model.pt
 MLM_Latest_Model.pt
 finetune_prompt.jsonl
 NER_Best_Model.pt
+anime_ner_train_bio_augmented.jsonl
+anime_ner_val_bio_augmented.jsonl
