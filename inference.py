@@ -9,7 +9,7 @@ import re
 gazetteer_path = "data/anime_training_data/title_gazetteer.json"
 BPE_tokenizer = "data/anime_training_data/synopsis_pretrained_bpe_tokenizer"
 model_path = "data/anime_training_data/NER_Best_Model.pt"
-
+TITLE_LABELS = {"B-TITLE", "I-TITLE"}
 def get_prompt():
     print(f"What would like to watch: \n")
     prompt = input()
@@ -104,20 +104,23 @@ def predict_ner(prompt, model, tokenizer, id_to_label, device):
 
     input_ids = encoded["input_ids"].to(device)
     attention_mask = encoded["attention_mask"].to(device)
-
+    model.to(device)
+    model.eval()
     with torch.no_grad():
         logits = model(input_ids, attention_mask)
-        predictions = torch.argmax(logits, dim=-1)
+
+    predictions, probabilities = label_threshold(logits, id_to_label)
 
     prediction_ids = predictions[0].cpu().tolist()
 
     results = []
 
-    for token, offset, pred_id, mask in zip(
+    for token, offset, pred_id, mask, probabilities in zip(
         encoded["tokens"],
         encoded["offsets"],
         prediction_ids,
-        encoded["attention_mask"][0].tolist()
+        encoded["attention_mask"][0].tolist(),
+        probabilities[0].tolist()
     ):
         if mask == 0:
             continue
@@ -132,9 +135,28 @@ def predict_ner(prompt, model, tokenizer, id_to_label, device):
             "offset": offset,
             "text": prompt[offset[0]:offset[1]],
             "label": label
+
         })
 
     return results
+
+def label_threshold(logits, id_to_label):
+    probability = torch.softmax(logits, dim=-1)
+    prediction_ids = torch.argmax(probability, dim=-1)
+    prediction_probs = torch.max(probability, dim=-1).values
+
+    prediction_ids = prediction_ids.clone()
+
+    for i in range(prediction_ids.shape[1]):
+        prediction_id = prediction_ids[0,i].item()
+        label = id_to_label[prediction_id]
+        confidence = prediction_ids[0, i].item()
+
+        if label in TITLE_LABELS and confidence < 0.90:
+            prediction_ids[0, i] = 0  # O label
+
+    return prediction_ids, prediction_probs
+
 def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     tokenizer_path = "data/anime_training_data/synopsis_pretrained_bpe_tokenizer"
@@ -156,8 +178,6 @@ def main():
             )
 
     model.load_state_dict(checkpoint["model_state_dict"])
-    model.to(device)
-    model.eval()
     predictions = predict_ner(prompt, model, tokenizer, id_to_label, device)
     for item in predictions:
         print(item["text"], item["token"], item["label"])
